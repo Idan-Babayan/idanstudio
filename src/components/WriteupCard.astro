@@ -6,7 +6,7 @@
  * /writeups index (path 3) can reuse it verbatim by passing `showPlatform` so the
  * platform reads on a mixed grid. The card owns no effects: tilt / glare / reveal
  * are driven by PlatformIndex's script via the data-tilt + .reveal hooks, and the
- * platform accent comes from the global .pf-* token in custom.css.
+ * platform accent comes from the global .pf-* token in pages.css.
  *
  * Matches the homepage card WOW: accent bar, cursor glare, 3D tilt, reveal stagger.
  */
@@ -47,7 +47,7 @@ const diffLabel: string = DIFF_LABEL[difficulty];
 
 const osLower: string = (os ?? '').toLowerCase();
 const hasOs: boolean = osLower.length > 0;
-// Only linux/windows have dedicated badge palettes in custom.css; anything else
+// Only linux/windows have dedicated badge palettes in components.css; anything else
 // falls back to the neutral .meta-badge base shape rather than mislabelling.
 const osClass: string = osLower === 'windows' ? 'os-windows' : osLower === 'linux' ? 'os-linux' : '';
 const osLabel: string = hasOs ? osLower.charAt(0).toUpperCase() + osLower.slice(1) : '';
@@ -94,7 +94,7 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 <style>
 	/* The card renders as an <a> + <h3> inside Starlight's .sl-markdown-content, whose
 	   prose rules (link color/underline, h3 cyan) would tint it. The PlatformIndex root
-	   carries Starlight's `not-content` class, and our custom.css prose rules are guarded
+	   carries Starlight's `not-content` class, and our prose.css rules are guarded
 	   with :not(:where(.not-content *)), so this whole subtree opts out of prose styling
 	   and these component styles apply cleanly (no specificity arms race). */
 	.wc-card {

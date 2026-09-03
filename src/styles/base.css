@@ -2,10 +2,11 @@
 /* Base: the zero-specificity defaults that sit under everything, today the shared focus ring.
    Layer order, not file order, decides precedence. */
 /* Shared, zero-specificity base for the general (rectangular) case. :where() holds specificity at 0 so
-   any element that intentionally needs a different width/offset still wins, and unlayered custom.css
-   already beats Starlight's layered styles. Starlight 0.39 ships no :focus-visible outline of its own,
-   so this becomes the ring for every content-page control (nav, TOC, prose links, buttons, the theme
-   toggle), lime unless an ancestor set --focus-ring. Keyboard only (:focus-visible), never on click. */
+   any element that intentionally needs a different width/offset still wins, and the layer order in
+   layers.css (base above every starlight.* sublayer) already beats Starlight's layered styles.
+   Starlight 0.39 ships no :focus-visible outline of its own, so this becomes the ring for every
+   content-page control (nav, TOC, prose links, buttons, the theme toggle), lime unless an ancestor set
+   --focus-ring. Keyboard only (:focus-visible), never on click. */
 @layer base {
 :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus-ring);

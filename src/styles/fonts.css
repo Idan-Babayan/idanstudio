@@ -1,8 +1,8 @@
 /* ── Self-hosted fonts (Syne + JetBrains Mono + Geist) ─────────────────────────
    Replaces the remote Google Fonts request. Subset WOFF2 files live in public/fonts/ and are served
    at /fonts/*.woff2 (see the pending _headers work for an immutable Cache-Control on that path). This
-   is infrastructure kept OUT of custom.css so Design owns styling: custom.css and the marketing pages
-   only reference the families below in their font stacks.
+   is infrastructure kept OUT of the theme modules so Design owns styling: those modules and the marketing
+   pages only reference the families below in their font stacks.
 
    JetBrains Mono is subset broad (Latin, punctuation, currency, arrows, math operators, box drawing,
    block elements, geometric shapes, misc technical and symbols) because it renders live terminal

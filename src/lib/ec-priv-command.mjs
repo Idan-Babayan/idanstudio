@@ -1,5 +1,5 @@
 // Expressive Code plugin: tag shell command words with a per-CATEGORY CSS class so they can be
-// colored by semantic signal value, theme-aware, in src/styles/custom.css.
+// colored by semantic signal value, theme-aware, in src/styles/overrides.css.
 //
 // Mechanism choice (verified against astro-expressive-code 0.42.0):
 //   - A Shiki `span` transformer (the obvious first try) is REJECTED by EC 0.42: it only allows
@@ -32,7 +32,7 @@
 
 import { definePlugin, addClassName } from '@expressive-code/core';
 
-// sudo stays content-matched (unchanged behavior). Color lives in custom.css (ec-cmd-priv).
+// sudo stays content-matched (unchanged behavior). Color lives in overrides.css (ec-cmd-priv).
 const PRIV_CLASS = 'ec-cmd-priv';
 const SUDO_CONTENT = new Set(['sudo']);
 

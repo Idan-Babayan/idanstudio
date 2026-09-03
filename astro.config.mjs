@@ -69,7 +69,7 @@ export default defineConfig({
         // collapsed command+flag+path into one band of blues). one-light separates command vs flag
         // on every command line (catppuccin-latte merged them). Both pass WCAG AA on their code bg.
         themes: ['tokyo-night', 'one-light'],
-        // Tag privilege commands (sudo, ...) with .ec-cmd-priv so custom.css can color them
+        // Tag privilege commands (sudo, ...) with .ec-cmd-priv so overrides.css can color them
         // distinctly. Implemented as an EC plugin because EC 0.42 rejects Shiki DOM-transformer
         // hooks (span/etc). See src/lib/ec-priv-command.mjs for the mechanism + rationale.
         plugins: [pluginPrivCommand()],
@@ -82,7 +82,7 @@ export default defineConfig({
         // same-origin crossorigin font preload served from its own preload cache, so it warned
         // "preloaded but not used" on every page even though both faces paint above the fold. The
         // preload only shortened first-load FOUT (no CLS or LCP effect here). Do not re-add font preloads.
-        // Reading-progress bar (styled by #tp-progress in custom.css)
+        // Reading-progress bar (styled by #tp-progress in chrome.css)
         { tag: 'script', content: "window.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');b.id='tp-progress';document.body.appendChild(b);var u=function(){var h=document.documentElement,m=h.scrollHeight-h.clientHeight;b.style.width=(m>0?h.scrollTop/m*100:0)+'%';};document.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);u();});" },
       ],
       title: "Idan.Lab",
