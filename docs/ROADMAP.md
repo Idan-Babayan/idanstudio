@@ -207,8 +207,9 @@
   Chromium (Chrome/Edge/Opera GX), from native scroll anchoring fighting the manual correction. Fix
   applied: suppress `overflow-anchor` for the operation, restored next frame (DECISIONS 2026-06-20). NOT
   reproducible in headless Chromium (false negative), so the fix is UNVERIFIED visually; owner to confirm
-  in a real browser. If a sub-pixel residual remains, it is rounding territory, leave it.
-- Known minor (low priority): few-pixel content shift on bulk expand/collapse (ToggleAll), traced to sub-pixel scroll rounding that scales with correction size; native-anchoring suppression reduced but did not eliminate it. Revisit by confirming overflow-anchor:none is on document.scrollingElement and instrumenting delta vs actual scrollY landing in a real browser.
+  in a real browser. Diagnostic recipe if it still shifts: confirm `overflow-anchor: none` is landing
+  on `document.scrollingElement`, and instrument the correction delta against where `scrollY`
+  actually settles. If a sub-pixel residual remains, it is rounding territory, leave it.
 - [DESIGN] Flag-gold targets the slug ids `#user-flag` / `#root-flag` as an interim (no `.flag-title`
   class exists; flag headings reuse `.task-title`). The TOC active-color ladder (DECISIONS 2026-06-29)
   also excludes flags by those same two slug ids so they stay gold instead of going cyan, so it shares the
@@ -220,12 +221,6 @@
 - [DESIGN/A11Y] OverTheWire `.pi-name` fails contrast at 3.41:1 (needs 4.5:1 for
   normal text, 3:1 for large). Platform landing name color. Real accessibility
   defect, not cosmetic. Decide a compliant color that holds the platform identity.
-- [DESIGN/A11Y] Difficulty pills fail AA on the light theme. The traffic-light
-  `.difficulty-*` badges do not clear contrast on paper. Both themes must pass;
-  light is the failing one. Retune the light-mode pill colors.
-- [DESIGN/A11Y] Principle cap set to `46ch` is unverified against the reading
-  measure. Confirm the character cap gives a comfortable line and is consistent
-  with the 50rem prose width decision, or set it deliberately.
 - [DESIGN] Right rail mobile layout at 375px: unresolved how the TOC rail behaves
   at the narrow breakpoint. Needs a real-device or 375px-viewport decision, paired
   with the narrow-screen gutter call below.
