@@ -6,6 +6,39 @@
 
 ---
 
+### 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard
+- **Supersedes in part:** 2026-07-04 · Principle coda auto-appends from frontmatter; JetBrains Mono
+  italic loaded. Only the "Auto-append" bullet dies: the Footer seam, the pagination suppression ("the
+  silence"), and the hand-made `.sl-markdown-content` wrapper. The schema field, the italic face and
+  frontmatter-only authoring stand.
+- **Decision:** the coda is appended INSIDE the content wrapper by an additive
+  `src/components/overrides/MarkdownContent.astro` (`<Default><slot />{coda}</Default>`), and the Footer
+  override is deleted, so Starlight's default Prev/Next pagination renders beneath the coda on every
+  writeup. `principle:` is valid ONLY on `src/content/docs/hackthebox/<tier>/<slug>.mdx`, stays optional
+  there, and `plugins/remark-inject-writeupmeta.mjs` fails the build on one anywhere else or on an empty
+  value. The override's render test and the guard agree; the guard is the one that can fail loudly.
+- **Why the pager comes back:** the owner dislikes losing Prev/Next. The "nothing should render after the
+  coda" follow-up in 2026-07-04 · Principle: a closing epigraph component for writeups (centered italic
+  mono maxim) was an aesthetic default, not a constraint. The coda is content, so it closes the content;
+  the pager is chrome, so it stays last.
+- **Why HackTheBox only:** Bandit is a minigame, one command per level, and a coda there is noise. On a
+  progressive wargame the old seam would also have deleted the primary navigation.
+- **Why the guard lives in the injector:** Zod (`content.config.ts`) has no file path in scope, and the
+  taxonomy guard was scoped away from frontmatter (2026-07-20 · WriteupMeta is injected from frontmatter,
+  platform is derived from the directory). The injector already derives platform from the path and
+  already throws on a bad frontmatter value (`badges`), so it is the one pass that sees both. One place,
+  so writeup #51 costs one frontmatter line.
+- **Rejected:** a coda on Bandit or any non-HTB page; the pager above the coda; narrowing the render
+  test without a guard (silent ignore, the failure mode at scale); a separate plugin for one check;
+  making `principle:` required on HTB now (a three-line flip in the same guard, deferred until the mass
+  import has landed).
+- **Verified:** build green at 46 pages; three negative probes (Bandit level, HTB hub, empty value) each
+  fail with the guard's message naming the file; on `astro preview`, busqueda measures 57.59px above the
+  coda and 96px from coda to pager (6rem by construction: 1.5rem collapsed sibling margin, 3rem `.meta`,
+  1.5rem footer gap, the rhythm every Bandit page already has), identical at 375px with no overflow;
+  one `.sl-markdown-content` per page; Bandit keeps its pager with no coda; console clean.
+- **Status:** Adopted + shipped.
+
 ### 2026-08-29 · Astro 6 to 7 and Starlight 0.39 to 0.41, upgraded in phases against a byte-reproducible build
 - **Supersedes in part:** 2026-05-31 · Stay on current package versions (no upgrade). Only the "remain on
   Astro 6.3.3 / Starlight 0.39.2" half dies. That entry's actual POLICY, upgrade only from a stable
@@ -2465,6 +2498,10 @@ ever wanted later, it would require adding static.cloudflareinsights.com to scri
   uses `entry.filePath` (under a platform dir, not an index page), robust across HTB tiers, VulnHub/Pico
   flat, and the OTW bandit hub. The coda is wrapped in a `.sl-markdown-content` element so the design's
   scoped `.sl-markdown-content .principle` CSS applies from the footer seam without touching custom.css.
+  - **Partly superseded by:** 2026-09-03 · The Principle coda keeps the pager, and `principle:` is
+    HackTheBox-only with a build guard. The Footer seam and the pagination silence are retired: the
+    coda now renders inside the content via a MarkdownContent override and the default footer
+    follows it.
 - **Italic:** the Google Fonts head link adds the JetBrains Mono `ital` axis (0/1, weights 400 and 500), so
   the italic maxim uses the true italic face, not a synthetic slant (JetBrains Mono is monospace, so the
   face is confirmed via document.fonts, not glyph width).

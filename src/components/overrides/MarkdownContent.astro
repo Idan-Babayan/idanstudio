@@ -1,0 +1,35 @@
+---
+// src/components/overrides/MarkdownContent.astro
+//
+// Additive override of Starlight's MarkdownContent (approved pattern, alongside PageSidebar and Head).
+// Renders Starlight's <Default /> content wrapper unchanged and appends the Principle coda INSIDE it, as
+// the last child of the real .sl-markdown-content, on HackTheBox writeups whose frontmatter declares a
+// non-empty `principle`. Everything after it is Starlight's: the default Footer follows with its
+// Prev/Next pagination, so the coda closes the CONTENT and the pager stays the last thing on the page.
+//
+// This replaces the Footer override that rendered the coda until 2026-09-03. That seam REPLACED the
+// footer, so a principle also deleted the page's pagination ("the silence"), and it had to rebuild a
+// .sl-markdown-content wrapper by hand because Footer renders outside the content. Both go away here:
+// the coda is content, and this is the component that owns the content wrapper.
+//
+// Scope is HackTheBox only, enforced twice. This path test decides what RENDERS;
+// plugins/remark-inject-writeupmeta.mjs fails the BUILD on a `principle` anywhere else, so a stray one
+// can never be silently ignored by this test. Keep the two path tests in step.
+import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+import Principle from '@components/Principle.astro';
+
+const { entry } = Astro.locals.starlightRoute;
+const filePath = entry.filePath;
+
+const isHtbWriteup =
+  /\/docs\/hackthebox\//.test(filePath) && !/\/index\.(md|mdx)$/.test(filePath);
+
+const principle = entry.data.principle as string | undefined;
+const codaText = isHtbWriteup && typeof principle === 'string' ? principle.trim() : '';
+const showCoda = codaText.length > 0;
+---
+
+<Default>
+  <slot />
+  {showCoda && <Principle text={codaText} />}
+</Default>

@@ -223,7 +223,7 @@ at build time, so CSS bytes vary by build machine.
 
 ```
 C:\dev\idanlab\                       # chosen to avoid Hebrew chars in the Windows user profile path
-├─ astro.config.mjs                   # Starlight config: site, sidebar, customCss[layers.css, fonts.css, then the eight theme modules tokens/base/prose/chrome/components/pages/utilities/overrides, in that order], EC themes + pluginPrivCommand, reading-progress head script (no font preloads, see DECISIONS 2026-07-07), image-zoom, vite alias, components overrides (PageSidebar + Footer + Head), markdown remarkPlugins (content-taxonomy validation guard + PasswordReveal import injection) + rehypePlugins (content image loading)
+├─ astro.config.mjs                   # Starlight config: site, sidebar, customCss[layers.css, fonts.css, then the eight theme modules tokens/base/prose/chrome/components/pages/utilities/overrides, in that order], EC themes + pluginPrivCommand, reading-progress head script (no font preloads, see DECISIONS 2026-07-07), image-zoom, vite alias, components overrides (PageSidebar + MarkdownContent + Head), markdown remarkPlugins (content-taxonomy validation guard + PasswordReveal import injection) + rehypePlugins (content image loading)
 ├─ src/
 │  ├─ content.config.ts               # docs collection (docsLoader + docsSchema) + the writeup metadata schema (§7)
 │  ├─ pages/
@@ -243,14 +243,14 @@ C:\dev\idanlab\                       # chosen to avoid Hebrew chars in the Wind
 │  │  ├─ ToggleAll.astro              # Expand/Collapse-all control (vanilla TS, scroll-anchored); injected via PageSidebar override
 │  │  ├─ AttackPath.astro             # guided infographic for a LINEAR priv-esc chain (ascending escalating path, SVG connectors, Next-step progression, one-time gold flourish); data-driven from a nodes[] prop, scoped styles, not-content. See DECISIONS 2026-07-19
 │  │  ├─ Callout.astro                # icon-based tagged callout (recon/loot/intel/vuln/defense); .cl styles in components.css
-│  │  ├─ Principle.astro              # closing epigraph (aside.principle, prop: text): centered italic mono maxim + dinkus + PRINCIPLE label; no card/border/bg; .principle styles in components.css
+│  │  ├─ Principle.astro              # closing epigraph (aside.principle, prop: text): centered italic mono maxim + dinkus + PRINCIPLE label; no card/border/bg; .principle styles in components.css; HackTheBox writeups only, appended from frontmatter by overrides/MarkdownContent.astro
 │  │  ├─ WriteupCard.astro            # presentational writeup card (props only, reusable for a future /writeups index)
 │  │  ├─ PlatformIndex.astro          # data + hero + difficulty filter + WriteupCard grid; ported homepage effects
 │  │  ├─ NotFound.astro               # 404 breadcrumb body (nudges to /robots.txt)
 │  │  ├─ SecretTerminal.astro         # from-scratch, zero-dependency vanilla-TS fake terminal
 │  │  └─ overrides/
 │  │     ├─ PageSidebar.astro         # additive Starlight override: renders <Default/> then <ToggleAll/> at the bottom of the right TOC
-│  │     ├─ Footer.astro              # additive Starlight override: auto-appends the <Principle> coda from frontmatter and suppresses pagination on writeups that carry one
+│  │     ├─ MarkdownContent.astro     # additive Starlight override: renders <Default/> with the <Principle> coda appended inside the content wrapper on HackTheBox writeups that set principle:; the default Footer and its pager follow unchanged
 │  │     └─ Head.astro                # additive Starlight override: renders <Default/> then appends only the social tags Starlight omits (author, og:image + secure_url/type/width/height/alt, twitter:title/description/image), per-page values read from frontmatter (see §2 "Social and SEO metadata")
 │  ├─ lib/
 │  │  └─ ec-priv-command.mjs          # EC plugin: tags command words by category (priv/recon/net/inspect)
@@ -540,10 +540,12 @@ token is an open ROADMAP item, not a bug.
 
 ### Starlight Component Overrides
 - **There are THREE, in `src/components/overrides/`:** `PageSidebar.astro` (renders the default "On
-  this page" TOC then appends `ToggleAll`), `Footer.astro` (appends the `Principle` coda from
-  frontmatter and suppresses pagination on writeups that carry one), and `Head.astro` (appends only
-  the Open Graph and Twitter Card tags Starlight omits, see §2 "Social and SEO metadata"). `Head`
-  arrived with the social-card work in 2026-08 and is the newest of the three.
+  this page" TOC then appends `ToggleAll`), `MarkdownContent.astro` (renders the default content
+  wrapper with the `Principle` coda appended inside it on HackTheBox writeups that set `principle:`;
+  the default Footer and its Prev/Next pager follow unchanged), and `Head.astro` (appends only the
+  Open Graph and Twitter Card tags Starlight omits, see §2 "Social and SEO metadata").
+  `MarkdownContent` replaced a `Footer` override on 2026-09-03 (that seam suppressed the pager beneath
+  the coda, see DECISIONS 2026-09-03) and is the newest of the three.
 - **Every override imports from the documented `@astrojs/starlight/components/*` entrypoints and
   none reaches into Starlight internals.** That is the constraint that keeps an override additive
   rather than a fork: a deep import into an internal path would bind to a private module that
@@ -842,7 +844,9 @@ removes. `gfm`, `smartypants` and `remarkRehype` are deliberately not passed: `u
 unset option back to the shared top-level value and all three already sit at their defaults.
 
 - **`remark-inject-writeupmeta.mjs`** injects the `<WriteupMeta />` row and its import. Gated on the
-  writeup path, so nothing outside one can be injected. Behavior detail in the MDX conventions below.
+  writeup path, so nothing outside one can be injected. It also FAILS the build on a `principle`
+  outside a HackTheBox writeup, or an empty one: it is the one pass that sees both path and
+  frontmatter, which Zod cannot. Behavior detail in the MDX conventions below.
 - **`remark-inject-passwordreveal.mjs`** injects the `PasswordReveal` import, only into files that use
   the tag and do not already import it.
 - **`remark-transform-recon-rail.mjs`** converts the recon findings list into the rail. It emits `dt`
@@ -886,6 +890,9 @@ underscore.
     files and are therefore exempt. A file outside a writeup path is never injected, even when it carries
     metadata frontmatter. The injector gates on this path test, which is why `platform` is derived from the
     directory rather than declared.
+- **Principle coda:** `principle: "..."` on HackTheBox writeups only, optional. Renders inside the content
+  as the last element, with the default Prev/Next pager beneath it. Anywhere else, or empty, the build
+  fails (`plugins/remark-inject-writeupmeta.mjs`). See DECISIONS 2026-09-03.
 - Long/indented code → wrapped in `<Toggle>`; all code blocks get `frame="code"` + a
   language `title` so bash and python look identical.
 - Notion `<aside>` → `:::tip[Answer]`. Task headings → brown `.task-title`.
@@ -945,7 +952,8 @@ underscore.
   `dist`: `meta-badge` 6, `difficulty-*` 3, `os-*` 3, `machine-meta` 0. See DECISIONS 2026-07-19.
 - **Frontmatter metadata (updated 2026-07-20):** `content.config.ts` extends `docsSchema` with strict
   optional enums for `os` (`Linux | Windows`), `environment` and `difficulty`, plus an optional `badges`
-  boolean, `tags`, and `principle`. Since the injection migration EVERY writeup sets `os` and
+  boolean, `tags`, and `principle` (HackTheBox-only, guarded at the remark stage; see §7). Since the
+  injection migration EVERY writeup sets `os` and
   `environment` in frontmatter, so `WriteupCard`'s OS chip now has a value on every writeup it renders
   (it still only maps linux/windows, which is exactly what the enum permits). `tags` stays deliberately
   unused until writeup volume makes a tag filter earn its place (see ROADMAP).
@@ -1192,3 +1200,5 @@ whole records.
 - Cherry-picking the CSS refactor to `main` ahead of the retune: rejected. See DECISIONS 2026-07-27 · The release hold is lifted and `dev` ships to production.
 - Solving the platform eyebrow inks without moving the hero wash: rejected. See DECISIONS 2026-07-31 · The platform ink family, and the wash that was causing the failure it hid.
 - Dimming the platform hero wash for contrast: rejected, no alpha reaches AA. See DECISIONS 2026-07-31 · The platform ink family, and the wash that was causing the failure it hid.
+- A Principle coda on Bandit, or on any page outside hackthebox/: rejected. See DECISIONS 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard.
+- Suppressing the Prev/Next pager beneath the Principle coda ("the silence"): rejected. See DECISIONS 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard.

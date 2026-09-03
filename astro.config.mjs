@@ -102,10 +102,10 @@ export default defineConfig({
       // control at the top (see src/components/overrides/PageSidebar.astro). Default TOC preserved.
       components: {
         PageSidebar: './src/components/overrides/PageSidebar.astro',
-        // Additive Footer override: auto-appends the <Principle> coda from frontmatter and suppresses
-        // pagination on writeups that carry one (see src/components/overrides/Footer.astro). All other
-        // pages render the default footer unchanged.
-        Footer: './src/components/overrides/Footer.astro',
+        // Additive MarkdownContent override: appends the <Principle> coda from frontmatter INSIDE the
+        // content wrapper on HackTheBox writeups (see src/components/overrides/MarkdownContent.astro).
+        // The default Footer, and its Prev/Next pagination, renders unchanged on every page.
+        MarkdownContent: './src/components/overrides/MarkdownContent.astro',
         // Additive Head override: appends only the four social tags Starlight does not emit
         // (og:image, twitter:image/title/description). See src/components/overrides/Head.astro.
         Head: './src/components/overrides/Head.astro',

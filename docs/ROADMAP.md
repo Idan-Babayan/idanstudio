@@ -112,9 +112,9 @@
 - [CONTENT] Mass-import ~50 existing writeups via the pipeline (HTB / VulnHub / PicoCTF / OTW), each as a
   flat `.mdx` with images under the parallel `src/assets` tree (DECISIONS 2026-06-30). Once HTB
   Medium/Hard folders have content, uncomment those (lowercase) sidebar groups in `astro.config.mjs`.
-- [CONTENT] Author `principle:` frontmatter on writeups to surface the coda (the auto-append mechanism,
-  footer silence, and true italic face all shipped 2026-07-04, see DECISIONS). Migrate busqueda's body
-  `<Principle>` to frontmatter (remove the inline component + import, add `principle:`).
+- [CONTENT] Author `principle:` frontmatter on HackTheBox writeups (optional, HTB only, build-guarded;
+  see CORE_SPEC §7). Three carry one today: busqueda, return, forest. The coda renders inside the
+  content with the default pager beneath it (2026-09-03).
 - [PRODUCT] Global `/writeups` index (path 3): reuse `WriteupCard` with `showPlatform` true for a
   mixed cross-platform grid (the card was built for this).
 
