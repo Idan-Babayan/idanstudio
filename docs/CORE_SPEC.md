@@ -1077,6 +1077,28 @@ than the challenge is worse than one without it. Reference file:
   **Marking 100% of a category selects nothing**, and is the same defect as marking a lone command.
   The reference page is the model on both counts: `pie-time` leaves its solitary
   `nc rescued-float.picoctf.net 55551` bare and marks the leaked address and the address typed back.
+
+  Four qualifiers, all added 2026-09-04 by owner ruling on specific fences:
+  - **CEREMONY IS NOT A CANDIDATE.** A command every session of its kind opens with does no work and
+    does not count toward the field. `pie-time`'s `gdb` fence marks 2 of its 3 commands and leaves `r`
+    bare, because `r` is how every `gdb` session starts. Excluding it is what makes the other two a
+    selection rather than the whole set.
+  - **BURIAL IS THE TEST, NOT LENGTH.** Mark only where the target sits inside material the eye skims.
+    `n0s4n1ty-1`'s `(ALL) NOPASSWD: ALL` is the last row under four lines of `sudo` boilerplate, so it
+    is buried and earns `{7}`. `stonks`' decode fence is two prompts, two commands and one result: the
+    result is the only row that is neither, it is last, and the reader takes the whole fence in at once.
+    Nothing is buried, so nothing is marked, even though a payoff line exists.
+  - **A DUMP TAKES NOTHING.** Material offered for completeness rather than as a step (`pie-time`'s full
+    disassembly, `stonks`' 817 hex digits, both behind a `<Toggle>`) carries no highlighting at all: it
+    is there for whoever wants it, and directing attention inside it contradicts the reason it was
+    collapsed. This is about dumps, NOT about `<Toggle>`: 22 of the 36 HackTheBox fences inside a toggle
+    ARE highlighted, because those collapse a recon STEP whose payoff is the point of opening it.
+  - **DO NOT TINT WHAT THE GRAMMAR RENDERS INERT.** A tint on a line Expressive Code has coloured as a
+    comment says "look here" and "this is switched off" in the same glyphs. `rust-fixme-3` briefly
+    marked the two commented-out braces that are the whole bug, and dropped it: they are the first and
+    last rows of the fence, and the sentence directly above names them, so position and prose were
+    already pointing and only the tint was fighting the syntax colours.
+
   Highlighting is per fence, so re-count the line numbers after any edit: a stale `{3,7}` silently marks
   the wrong rows and still builds.
 - **A fence is titled by WHERE IT STARTS.** A fence opening on the local machine (the `Idan@Kali` prompt)
