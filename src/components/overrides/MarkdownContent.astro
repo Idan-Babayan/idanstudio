@@ -15,7 +15,20 @@
 // Scope is HackTheBox only, enforced twice. This path test decides what RENDERS;
 // plugins/remark-inject-writeupmeta.mjs fails the BUILD on a `principle` anywhere else, so a stray one
 // can never be silently ignored by this test. Keep the two path tests in step.
-import Default from '@astrojs/starlight/components/MarkdownContent.astro';
+// DEFAULT IS THE PLUGIN'S MarkdownContent, NOT STARLIGHT'S, AND THAT IS LOAD BEARING.
+// starlight-image-zoom claims this same component, but only when the user has not: its config:setup
+// reads `if (!config.components?.MarkdownContent)` before assigning its own. Naming a MarkdownContent
+// override in astro.config.mjs therefore makes the plugin SKIP its override silently, with no warning
+// and a green build, and the <ImageZoom /> element that carries the zoom script and styles never
+// renders. Image zoom then dies on every writeup at once: the custom element stays unregistered, so
+// its wrapper falls back to display:inline and the zoom button, which should be absolutely positioned
+// in the image's corner, lays out inline instead and lands on top of the first characters of the
+// caption underneath. Both symptoms, one cause. Introduced 2026-09-03 with the coda, found 2026-09-03.
+// The plugin's override wraps Starlight's own and adds nothing else, so chaining through it is exactly
+// equivalent plus the zoom, and the coda still lands inside the real .sl-markdown-content.
+// If the MarkdownContent override is ever removed, this import goes back to
+// '@astrojs/starlight/components/MarkdownContent.astro' and the plugin reclaims the slot by itself.
+import Default from 'starlight-image-zoom/overrides/MarkdownContent.astro';
 import Principle from '@components/Principle.astro';
 
 const { entry } = Astro.locals.starlightRoute;
