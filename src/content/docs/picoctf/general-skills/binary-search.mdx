@@ -9,7 +9,7 @@ environment: Standalone
 
 ## Approach
 
-The challenge ships an archive. Unpack it and read the game first, rather than spending a live guess finding out what the rules are.
+The challenge ships an archive. Unpack it and read the game first: it announces its range in the banner, but nothing in the session tells you the budget until it runs out.
 
 ```bash frame="code" title="Bash"
 ┌──(Idan@Kali)-[~/Binary_Search]
@@ -56,4 +56,4 @@ Connection to atlas.picoctf.net closed.
 
 Each guess comes back higher, lower or correct, so a run of `k` guesses can separate at most `2^k - 1` numbers. Nine guesses cover 511, which is short of a thousand, and ten cover 1023, which is not. Ten is therefore the smallest budget that can possibly work, and it is tight rather than generous: 489 of the thousand possible answers need every one of them.
 
-This run did not actually bisect. Four of the nine guesses, 900, 860, 845 and 832, were not the midpoint of the range still in play, and each left more candidates standing than halving would have. Strict halving reaches 827 in six. Narrowing by eye still landed inside the budget, but it spent slack that a less forgiving answer would have needed.
+This run did not actually bisect. Four of the nine guesses, 900, 860, 845 and 832, were not the midpoint of the range still in play, and each risked leaving more candidates standing than halving could. Strict halving reaches 827 in six. Narrowing by eye still landed inside the budget, but it spent slack that a less forgiving answer would have needed.
