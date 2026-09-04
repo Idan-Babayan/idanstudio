@@ -119,8 +119,9 @@
     rating it was never meant to be. Difficulty is deliberately absent from PicoCTF frontmatter
     (points run 1 to 200, are set per edition, and span 2019 to 2025, so no honest mapping to
     Easy through Insane exists; decided 2026-09-03), so there is nothing to fall back to either.
-  - **Measured on the built page** at seven writeups (2026-09-04, was one on 2026-09-03): hero breakdown
-    reads `7 misc`, all seven cards carry `data-difficulty="misc"`, the card eyebrow reads `Misc · Linux`,
+  - **Measured on the built page** at nineteen writeups (2026-09-04, was seven earlier the same day and one
+    on 2026-09-03): hero breakdown
+    reads `19 misc`, all nineteen cards carry `data-difficulty="misc"`, the card eyebrow reads `Misc · Linux`,
     the badge is `meta-badge difficulty-misc` labelled `Misc`, and `showFilter` is still false because it
     needs 2+ present groups and every card lands in the same one. At full import that reads `22 misc`.
     The count is the only thing that moves as writeups land: nothing here self-corrects with volume.
