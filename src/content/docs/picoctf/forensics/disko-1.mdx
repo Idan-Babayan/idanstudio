@@ -1,0 +1,36 @@
+---
+title: DISKO 1
+description: "PicoCTF DISKO 1: fifty megabytes of FAT32 and two commands, because a disk image is bytes before it is a filesystem."
+environment: Standalone
+---
+
+> Goal: a disk image, fifty megabytes of it, and a flag somewhere inside. Nothing says where.
+
+## Approach
+
+Ask `file` what the artefact is before deciding how to open it. The answer is a FAT32 volume, and the more useful half of that answer is what is missing from it: no partition entries. The line opens with "DOS/MBR boot sector" only because `file` recognises the boot signature, which a FAT volume boot record carries just as an MBR does, so nothing here implies a partition table. The filesystem starts at byte zero and there is no offset to work out.
+
+At which point the shortest route is worth trying before the careful one.
+
+```bash frame="code" title="Bash" {6,9}
+┌──(Idan@Kali)-[~/DISKO_1]
+└─> wget https://artifacts.picoctf.net/c/538/disko-1.dd.gz
+┌──(Idan@Kali)-[~/DISKO_1]
+└─> gzip -d disko-1.dd.gz
+┌──(Idan@Kali)-[~/DISKO_1]
+└─> file disko-1.dd
+disko-1.dd: DOS/MBR boot sector, code offset 0x58+2, OEM-ID "mkfs.fat", Media descriptor 0xf8, sectors/track 32, heads 8, sectors 102400 (volumes > 32 MB), FAT (32 bit), sectors/FAT 788, serial number 0x241a4420, unlabeled
+┌──(Idan@Kali)-[~/DISKO_1]
+└─> strings disko-1.dd | grep "picoCTF{.*}" --color=none
+<flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{1t5_ju5t_4_5tr1n9_e3408eef}" />
+
+There are three prebuilt DISKO 1 images rather than one, so both the flag's last eight characters and that volume serial belong to whichever of the three you were handed. Draw a different one and they may not match.
+
+## Why it works
+
+`strings` converts nothing, which is the part its name gets wrong. It walks the raw bytes and prints every run of four or more printable characters, discarding everything else, so the flag was already stored as literal ASCII and the tool only surfaced it. Nothing was decoded.
+
+A `.dd` is a byte-for-byte copy of the whole volume, so any plain text anywhere inside it is present in the file: live file content, a directory entry, unused space between structures, a region the filesystem no longer references. A linear scan reaches all of those without knowing which one it found, and without parsing a single FAT entry. That indifference is exactly why it is the right first move on an image whose layout you have not established yet, and this run is a fair example: it never determined where the flag was sitting, and never needed to.
