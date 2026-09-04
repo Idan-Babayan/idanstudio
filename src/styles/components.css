@@ -696,6 +696,17 @@ html[data-theme="light"] .sl-markdown-content .cl :not(pre) > code {
    two modes cannot drift apart. The button LABEL is body-size text and reads the ink; its border and
    focus ring are non-text and read the accent. Both themes; light is stronger and more golden. The tokens hold literal values and are declared on the bare :root fallback, so nothing
    fails to resolve (the earlier failure mode here was color-mix indirection, not custom properties). */
+/* TWO nested alignments, because the row holds two different KINDS of thing and they want different
+   rules. The label (0.6rem) and the value (0.88rem) are type on one line, so they belong on a shared
+   BASELINE: centering boxes of two type sizes leaves their baselines 2.08px apart, measured, with the
+   label riding high. That was always true and only became visible when the label went from the long
+   PASSWORD to a short FLAG and started reading as its own block. The button is a control, not type on
+   that line, so it CENTRES.
+   Putting `align-items: baseline` on the row itself does not work and was tried: a flex baseline group
+   is positioned at cross-START, so with the button (the tallest item) setting the row height, the label
+   and value hug the top and leave all the slack underneath. Hence .pw-secret below: the two pieces of
+   type get their own box, baseline-aligned INSIDE it, and that box then centres against the button like
+   any other item. Equal space above and below, and the baselines still meet. */
 .sl-markdown-content .pwreveal {
   display: flex;
   align-items: center;
@@ -712,6 +723,15 @@ html[data-theme="light"] .sl-markdown-content .cl :not(pre) > code {
 :root[data-theme="light"] .sl-markdown-content .pwreveal {
   border-color: rgba(var(--pw-amber-rgb), 0.55);
   background: rgba(var(--pw-amber-rgb), 0.14);
+}
+/* The label + value object. Owns the baseline relationship; takes the row's free width so the value
+   can still truncate rather than push the button off the end (min-width: 0 is what allows that). */
+.sl-markdown-content .pwreveal .pw-secret {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  flex: 1;
+  min-width: 0;
 }
 .sl-markdown-content .pwreveal .pw-label {
   font-family: var(--sl-font-mono);
