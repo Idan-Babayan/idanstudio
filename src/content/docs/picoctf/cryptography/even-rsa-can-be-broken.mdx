@@ -37,7 +37,7 @@ print(message)
 
 Only `E` is durable. `N` and `Cipher` above are one connection's, and the failure mode if you forget that is unusually quiet: substituting one of the two raises a decoding error, which is the lucky case, while substituting neither runs cleanly and prints somebody else's flag.
 
-```bash frame="code" title="Bash" {10}
+```bash frame="code" title="Bash"
 ┌──(Idan@Kali)-[~/EVEN_RSA]
 └─> python3 -m venv venv
 ┌──(Idan@Kali)-[~/EVEN_RSA]
