@@ -1,10 +1,10 @@
 ---
 title: Rust fixme 3
-description: "PicoCTF Rust fixme 3: the last of the three, where nothing is misspelled, nothing is mistyped, and the only fault in the file is two slashes."
+description: "PicoCTF Rust fixme 3: the last of the three, where nothing is mistyped and the only fault in the file is a pair of comment markers."
 environment: Standalone
 ---
 
-> Goal: the third Rust project in the set. Everything the first two taught is already applied, and the fault this time is that a block the challenge wrote for you has been commented out.
+> Goal: the third Rust project in the set. Everything the first two taught is already applied correctly, and it still refuses to compile.
 
 ## Approach
 
@@ -21,7 +21,7 @@ Same opening as before: fetch, unpack, read `src/main.rs`. The toolchain went on
 
 The file is longer than the previous two and, unusually for this set, already correct in every way they taught: `decrypt` takes a `&mut String`, `main` hands it `&mut party_foul`, and the binding is declared `let mut`. What is different is the decryption body. Rather than reading the `Vec<u8>` that `decrypt_vec` hands back, it pulls a raw pointer and a length out of that vector and rebuilds a slice from the pair, with a comment block above it pointing at the Rust book's chapter on unsafe code.
 
-That comment is not decoration, it is the hint. Two lines in the block carry a `//` and everything between them does not.
+That comment is not decoration, it is the hint, and what it points at is directly below it. The `unsafe {` and its closing `}` are commented out, and the statements they were meant to wrap are not.
 
 ```rust frame="code" title="src/main.rs, the block as shipped" {1,13}
     // unsafe {
@@ -39,9 +39,9 @@ That comment is not decoration, it is the hint. Two lines in the block carry a `
     // }
 ```
 
-With the braces commented out the body is still live, it is simply no longer inside anything, so `std::slice::from_raw_parts` gets called at plain function-body level. `cargo build` rejects exactly that one line as `E0133`, a call to an unsafe function that requires an unsafe function or block. Deleting the two `//` is the entire fix, and there is nothing else to change.
+With the braces commented out the body is still live, it is simply no longer inside an `unsafe` block, so `std::slice::from_raw_parts` is called from ordinary safe code. `cargo build` rejects exactly that one line as `E0133`: the call is unsafe and requires an unsafe function or block. Deleting the two `//` is the entire fix.
 
-```bash frame="code" title="Bash" {2}
+```bash frame="code" title="Bash"
 ┌──(Idan@Kali)-[~/Rust_fixme_3/fixme3]
 └─> cargo run
    Compiling rust_proj v0.1.0
@@ -56,4 +56,4 @@ Using memory unsafe languages is a: PARTY FOUL! Here is your flag: <flag>
 
 `unsafe` does not switch anything off. The borrow checker, the type system and the ownership rules all still apply inside the block; what the keyword unlocks is a short list of five abilities the compiler cannot verify on its own, one of which is calling a function marked unsafe. `from_raw_parts` is on that list because nothing in its signature can prove the pointer is valid for the length given, correctly aligned, and not going to be mutated while the slice is alive. Those are obligations, and `unsafe` is where the author accepts them.
 
-The joke of this particular file is that the obligations are already met and always were. The pointer and the length come from a vector that stays alive for the whole block, and the slice being rebuilt is the same one `&decrypted_buffer` would have handed over for free. That is why commenting out the braces produces a compile error rather than a crash: the code was sound the entire time, it just was not allowed to say so.
+The joke of this particular file is that the obligations are already met and always were. The pointer and the length come from a vector that stays alive for the whole block, and the slice being rebuilt is the same one `&decrypted_buffer` would have handed over for free. So the compiler's objection here is bookkeeping rather than substance: the code was sound the entire time, it just was not allowed to say so.
