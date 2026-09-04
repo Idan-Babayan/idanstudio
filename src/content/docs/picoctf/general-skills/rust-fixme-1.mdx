@@ -34,7 +34,7 @@ println!(
 
 Three tokens fix all of it: a `;` after the key, `ret` becomes `return`, and `":?"` becomes `"{}"`. The last one is the only one that is not purely mechanical, since `{}` is the placeholder `println!` substitutes an argument into, and `:?` on its own is neither a placeholder nor valid inside one.
 
-```bash frame="code" title="Bash" {2}
+```bash frame="code" title="Bash"
 ┌──(Idan@Kali)-[~/Rust_fixme_1/fixme1]
 └─> cargo run
    Compiling rust_proj v0.1.0
