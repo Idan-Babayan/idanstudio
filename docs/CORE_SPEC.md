@@ -522,11 +522,17 @@ token is an open ROADMAP item, not a bug.
   `<span>` today (the commented `<a>` + `data-astro-prefetch="false"` restore verbatim once the filter
   routes ship), `.not-content`; icons live in `badges/icons.ts` on a 14px grid; runtime-validates its
   union props. Colour model, icon sourcing, geometry and the light-mode AA palette are documented
-  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **`difficulty` is the one OPTIONAL prop**
-  (`difficulty?: Difficulty`): omit it and the Difficulty chip does not render at all, which is how a
-  progressive wargame with no difficulty rating (OverTheWire Bandit) is expressed. A difficulty that IS
-  supplied is still validated, so a typo still fails the build; it is never given a fallback. The other
-  three props are required. WriteupMeta is now the metadata row on EVERY writeup and has fully replaced
+  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **TWO props are OPTIONAL, `os` and `difficulty`**
+  (`os?: OS`, `difficulty?: Difficulty`), for the same reason: some content has no honest value on that
+  axis, and neither union carries a "not applicable" member, so the chip is omitted rather than invented.
+  Omit `difficulty` and no Difficulty chip renders, which is how a progressive wargame with no rating
+  (OverTheWire Bandit) is expressed. Omit `os` and no OS chip renders, which is how a web challenge with
+  no target operating system in evidence (PicoCTF `head-dump`) is expressed; that page ships a two-chip
+  row, Platform and Environment. A value that IS supplied is still validated on either axis, so
+  `difficulty="Hardd"` or `os="Linnux"` still fails the build, and neither is ever given a fallback.
+  `platform` and `environment` remain required. **`os` became optional 2026-09-03,** during the first
+  PicoCTF import: it had been required, so the "omit it where it does not apply" rule this spec already
+  described was not actually true until then, and the build is what caught it. WriteupMeta is now the metadata row on EVERY writeup and has fully replaced
   the hand-authored `.machine-meta` badge row, which no longer appears anywhere in `src/content/docs`.
   **It is INJECTED, never hand-placed (2026-07-20):** `plugins/remark-inject-writeupmeta.mjs` builds the
   element from frontmatter, so no writeup imports or writes the component. `platform` is supplied by the
@@ -901,8 +907,9 @@ underscore.
   change. Icons remain in public/icons; marketing images remain in public/images.
   Absolute /public image paths are not used for writeup content images.
 - Frontmatter `title`/`description` + `import Toggle from '@components/Toggle.astro'`.
-- **Metadata is FRONTMATTER ONLY.** Declare `os`, `environment` and (where the content has a rating)
-  `difficulty` in frontmatter, and write nothing in the body: the badge row and its import are injected by
+- **Metadata is FRONTMATTER ONLY.** Declare `environment`, plus `os` (where the challenge genuinely has a
+  target operating system) and `difficulty` (where the content has a rating), and write nothing in the
+  body: the badge row and its import are injected by
   `plugins/remark-inject-writeupmeta.mjs`. Never author a `<WriteupMeta />` tag or import it. `platform` is
   NOT a frontmatter field, it is derived from the writeup's directory. Omit `difficulty` for a progressive
   wargame (Bandit) and no chip renders. Set `badges: false` (unquoted boolean, never `no` or `off`) to opt a
@@ -988,9 +995,10 @@ underscore.
 - **Frontmatter metadata (updated 2026-07-20):** `content.config.ts` extends `docsSchema` with strict
   optional enums for `os` (`Linux | Windows`), `environment` and `difficulty`, plus an optional `badges`
   boolean, `tags`, and `principle` (HackTheBox-only, guarded at the remark stage; see §7). Since the
-  injection migration EVERY writeup sets `os` and
-  `environment` in frontmatter, so `WriteupCard`'s OS chip now has a value on every writeup it renders
-  (it still only maps linux/windows, which is exactly what the enum permits). `tags` stays deliberately
+  injection migration every writeup sets `environment`, and every writeup with a target operating system
+  sets `os`, so `WriteupCard`'s OS chip has a value wherever one exists and self-hides where one does not
+  (it still only maps linux/windows, which is exactly what the enum permits; `head-dump` is the first
+  writeup to omit `os`, see the WriteupMeta entry in §6). `tags` stays deliberately
   unused until writeup volume makes a tag filter earn its place (see ROADMAP).
 
 ### Badge system (WriteupMeta): icon sourcing, geometry, a11y

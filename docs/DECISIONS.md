@@ -6,6 +6,63 @@
 
 ---
 
+### 2026-09-03 · WriteupMeta `os` becomes optional: a web challenge has no target operating system
+
+- **Supersedes in part:** 2026-07-19 · WriteupMeta difficulty becomes optional; Bandit's 34 pages migrate
+  off `.machine-meta` (retiring it site-wide). Exactly one claim dies, in that entry's Decision bullet:
+  `difficulty` is no longer "the ONE optional prop on `WriteupMeta`". There are two. Everything else in
+  that entry stands, including the whole difficulty rationale, the Bandit migration, the required-ness
+  probe and the line-ending property, so it stays live and is NOT archived.
+- **Decision:** `os` is optional (`os?: OS`), on exactly the pattern `difficulty` already set. Absent, the
+  OS chip does not render and the row is Platform + Environment. Present, it is still validated, so
+  `os="Linnux"` fails the build. It is never given a fallback. First and only consumer today:
+  `picoctf/web-exploitation/head-dump`, a Node application reached over HTTP.
+- **Why optional, rather than picking a value:** `head-dump` is a URL and a browser. The union is
+  `Linux | Windows` with no honest "not applicable" member, and while the challenge server is
+  overwhelmingly likely to be Linux, that is an inference about infrastructure the writeup never
+  observed, not a fact the solve established. The OS chip is also a NAVIGATIONAL axis, an anchor for the
+  planned `/os` filter route (see ROADMAP), so a guessed value does not merely sit there looking wrong:
+  it files the page under a filter it does not belong to. Same recognition as `Progressive` in the
+  Environment union and as the absent Bandit difficulty: some content is a different SHAPE, not a machine
+  with a missing field.
+- **The interesting part is how long it was wrong.** THREE layers already treated `os` as optional and
+  only the component disagreed. `content.config.ts` declares `os: z.enum([...]).optional()`.
+  `plugins/remark-inject-writeupmeta.mjs` forwards it only when frontmatter holds a non-empty string,
+  precisely so an absent axis renders nothing. CORE_SPEC §7 told authors to declare `os` and §6 said the
+  chip self-hides. Every one of those was written as though the component agreed, and none of them can
+  fail on their own: the schema is happy with absence, the injector is happy with absence, and the prose
+  is prose. The single dissenting line was `os: OS` in the Props interface. Nothing could catch it until
+  a writeup actually omitted `os`, which took from 2026-07-20 to the first PicoCTF import, because until
+  then every writeup was a machine and every machine had one.
+- **Found by the build, not by review:** `Error: WriteupMeta: unknown os "undefined". Expected one of:
+  Linux, Windows.` This is the same failure mode the 2026-07-19 entry recorded for `difficulty`, and the
+  same property still holds and is worth restating: the component's runtime guard is the ONLY gate on an
+  absent axis, and it reports at render time with no source position. The taxonomy guard cannot help
+  (it stopped validating WriteupMeta props on 2026-07-20) and Zod cannot help (it agrees the field is
+  optional). A required prop whose schema says optional is invisible until content exercises it.
+- **No CSS change was needed, measured rather than assumed.** `.wm-nav` is a flex row with `gap: 8px` and
+  no `:has()`, sibling selector or count dependency, and `.writeup-meta`'s `gap: 16px` has no effect with
+  one child, exactly the argument the 2026-07-19 entry made for `.wm-diff`. Measured at 1280px, the
+  two-chip row is geometrically identical to Bandit's three-chip row on every axis but width: chip height
+  33.22px both, inter-chip gap 8.00px both, row flush to the `h1` left edge (delta 0.00) both, title to
+  row 73.00px both, row to body 33.59px both.
+- **Rejected:** writing `os: Linux` on `head-dump` (inventing metadata about a target the writeup never
+  touched, and the exact error the difficulty omission exists to prevent); adding an "N/A" or "Web" member
+  to the OS union (a chip that says nothing is worse than no chip, and it would pollute the future `/os`
+  route with a bucket that means "we did not know"); leaving `os` required and simply never importing web
+  challenges (six of the archive's twenty-two are Web Exploitation); making the injector substitute a
+  default (moves the invention one layer down and hides it better).
+- **Verified:** build green at 50 pages. `head-dump` renders exactly two chips, PicoCTF and Standalone,
+  with no OS chip and no empty gap. Regression checked on the two shapes that must not move: Bandit 0 to 1
+  still renders OverTheWire / Linux / Progressive, and Busqueda still renders HackTheBox / Linux /
+  Standalone plus its Difficulty chip and both FlagCapture controls. The other three PicoCTF pages, which
+  do declare `os`, still show their Linux chip.
+- **Status:** Adopted (working tree; NOT committed). Component + docs only: no CSS, no config, no new
+  deps, pinned versions unchanged. CORE_SPEC §6 and §7 updated in three places, including two claims that
+  the change falsified (`os` listed as always-declared, and the "other three props are required" line).
+
+---
+
 ### 2026-09-03 · A component override in `astro.config.mjs` silently disables a Starlight plugin's override of the same component
 
 - **Context, not a supersession:** 2026-09-03 · The Principle coda keeps the pager, and `principle:` is
@@ -1468,6 +1525,9 @@
   when it is absent the Difficulty chip does not render at all. All 34 OverTheWire Bandit pages (33 level
   pages plus `bandit-finale.mdx`) drop their hand-authored `.machine-meta` badge row for
   `<WriteupMeta platform="OverTheWire" os="Linux" environment="Progressive" />`.
+  **Partly superseded by:** 2026-09-03 · WriteupMeta `os` becomes optional: a web challenge has no target
+  operating system. ONLY the words "the ONE optional prop" are stale: `os` became optional on the same
+  pattern, so there are now two. The rest of this bullet, and the rest of this entry, stand unchanged.
 - **Why optional, rather than picking a value:** the task was specced as a badge-row swap only, but the old
   Bandit row carries exactly two axes (platform + OS) while `WriteupMeta` required four. `Difficulty` is
   `Easy | Medium | Hard | Insane` with no honest "none" member, and a progressive wargame has no difficulty
