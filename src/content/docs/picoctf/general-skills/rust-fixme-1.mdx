@@ -16,10 +16,14 @@ Rust is not on the box by default, so the toolchain comes first. `rustup` instal
 ┌──(Idan@Kali)-[~/Rust_fixme_1]
 └─> source $HOME/.cargo/env
 ┌──(Idan@Kali)-[~/Rust_fixme_1]
-└─> tar -xzf fixme1.tar.gz
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/3f0e13f541928f420d9c8c96b06d4dbf7b2fa18b15adbd457108e8c80a1f5883/fixme1.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> gunzip fixme1.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> tar -xf fixme1.tar
 ```
 
-`src/main.rs` turns out to be finished. It holds a key, 33 encrypted bytes as hex strings, and a call into the `xor_cryptor` crate that turns one into the other. There is nothing to reverse and nothing to work out. It simply does not build, and the three faults each come with a comment naming the question you have to answer.
+`src/main.rs` turns out to be finished. It holds a key, 33 encrypted bytes as hex strings, and a call into the `xor_cryptor` crate that turns those bytes back into text. There is nothing to reverse and nothing to work out. It simply does not build, and the three faults each come with a comment naming the question you have to answer.
 
 ```rust frame="code" title="src/main.rs, as shipped"
 let key = String::from("CSUCKS") // How do we end statements in Rust?
@@ -32,7 +36,7 @@ println!(
 );
 ```
 
-Three tokens fix all of it: a `;` after the key, `ret` becomes `return`, and `":?"` becomes `"{}"`. The last one is the only one that is not purely mechanical, since `{}` is the placeholder `println!` substitutes an argument into, and `:?` on its own is neither a placeholder nor valid inside one.
+Three tokens fix all of it: a `;` after the key, `ret` becomes `return`, and `":?"` becomes `"The flag is: {}"`. The last one is the only one that is not purely mechanical, since `{}` is the placeholder `println!` substitutes an argument into, and `:?` is a format specifier that means nothing until it sits inside one, as `{:?}`.
 
 ```bash frame="code" title="Bash"
 ┌──(Idan@Kali)-[~/Rust_fixme_1/fixme1]
@@ -47,6 +51,6 @@ The flag is: <flag>
 
 ## Why it works
 
-The challenge is not really about Rust, it is about reading what the compiler tells you. Each of the three faults is a different phase complaining: a missing semicolon is caught while parsing, `ret` is an unresolved name, and the format string fails while the macro expands. That is also why they surface one or two at a time rather than all at once, and why the loop is build, read the message, fix, build again. `rustc` names the file, the line and usually the repair, which makes the compiler the walkthrough rather than an obstacle in front of it.
+The challenge is not really about Rust, it is about reading what the compiler tells you. Each of the three faults is a different phase complaining: a missing semicolon is caught while parsing, `ret` is an unresolved name, and the format string fails while the macro expands. All three land in the same build, because the parser recovers from the missing semicolon instead of stopping there. `rustc` names the file and the line every time, and for the semicolon the repair itself, so the compiler is the walkthrough even where its suggestion is not the one to take.
 
 The decryption never needed attention, but it is worth not describing it wrongly. `xor_cryptor` XORs the buffer against a stream derived from the key and then pushes the result through a fixed substitution table, so it is XOR based without being a one line XOR. The recorded bytes prove that on their own: four of the 33 have their top bit set, while both the key and the flag are plain ASCII, and exclusive-or of two seven bit values can never produce an eighth.
