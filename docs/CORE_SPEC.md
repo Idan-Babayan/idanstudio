@@ -851,10 +851,14 @@ Preserves reading position: anchors on the current heading and corrects scroll s
    gap between a raw Notion export and the intended finished writeup is an editorial-judgment problem
    that no text-transformation script resolves: a script can normalize syntax, but it cannot make the
    editorial calls that define the site's writeup quality. Apply the MDX conventions below by hand.
-   - Place the file at `src/content/docs/{platform}/{difficulty}/{slug}.mdx`. The `{difficulty}` dir is
-     lowercase (`easy`/`medium`/`hard`/`misc`): the sidebar `autogenerate.directory` is case-sensitive
-     (e.g. `hackthebox/easy`) and must match the on-disk lowercase dir; a case-only rename needs
-     `git mv` on Windows (`core.ignorecase=true`).
+   - Place the file at `src/content/docs/{platform}/{middle}/{slug}.mdx`. The `{middle}` dir is
+     lowercase: the sidebar `autogenerate.directory` is case-sensitive (e.g. `hackthebox/easy`) and must
+     match the on-disk lowercase dir; a case-only rename needs `git mv` on Windows
+     (`core.ignorecase=true`). **What the middle tier MEANS is per platform**, and this is load bearing:
+     HackTheBox and VulnHub group by DIFFICULTY (`easy`/`medium`/`hard`/`misc`), OverTheWire by WARGAME
+     (`bandit`), PicoCTF by CATEGORY (`binary-exploitation`, and the other five below). `PlatformIndex`
+     currently assumes difficulty for all of them, which is why every PicoCTF card renders as `misc`
+     today; the fix is a committed ROADMAP item, not a defect in the content shape.
    - Copy + rename screenshots into `src/assets/{platform}/{difficulty}/{slug}/`, then reference them
      from the writeup by a relative Markdown path (`../../../../assets/...`) so astro:assets optimizes
      + hashes them.

@@ -109,6 +109,40 @@
   color hardcoded anywhere. Keep both themes, `:focus-visible` only, no motion. Note the marketing pages
   have no Starlight `markdown.css` under them, so the orphaned-margin geometry bug fixed on content toggles
   (DECISIONS 2026-07-17) does not apply there.
+- [ENG/DESIGN] **PicoCTF intro page needs CATEGORY filtering, not difficulty.** Today every PicoCTF card
+  renders as `misc` and the filter rail does not render at all. Blocks nothing, but it is the first thing
+  a visitor sees on the platform and it currently looks broken, so do it before the PicoCTF half of the
+  mass import below lands ~22 identical grey cards.
+  - **Cause, not a missing value.** `PlatformIndex.difficultyOf()` reads the SECOND path segment
+    (`entry.id.split('/')[1]`) and coerces anything outside `easy|medium|hard|misc` to `misc`. PicoCTF's
+    middle tier is a CATEGORY (`picoctf/binary-exploitation/pie-time`), so the segment is being read as a
+    rating it was never meant to be. Difficulty is deliberately absent from PicoCTF frontmatter
+    (points run 1 to 200, are set per edition, and span 2019 to 2025, so no honest mapping to
+    Easy through Insane exists; decided 2026-09-03), so there is nothing to fall back to either.
+  - **Measured on the built page** at seven writeups (2026-09-04, was one on 2026-09-03): hero breakdown
+    reads `7 misc`, all seven cards carry `data-difficulty="misc"`, the card eyebrow reads `Misc · Linux`,
+    the badge is `meta-badge difficulty-misc` labelled `Misc`, and `showFilter` is still false because it
+    needs 2+ present groups and every card lands in the same one. At full import that reads `22 misc`.
+    The count is the only thing that moves as writeups land: nothing here self-corrects with volume.
+  - **The six categories** are picoCTF's own, and the sidebar in `astro.config.mjs` already names them in
+    this order: General Skills, Cryptography, Web Exploitation, Forensics, Reverse Engineering, Binary
+    Exploitation. Reverse Engineering has no writeup in the archive, and the rail's existing `present`
+    filter already drops empty groups, so it should stay a five-pill rail until one lands.
+  - **Most of the machinery exists.** The rail is already GENERIC by design: a pill carries
+    `data-filter-key` (which card `data-*` dimension to read) plus `data-filter` (the value), and
+    `applyFilter` does `c.dataset[key]`. `WriteupCard` already emits `data-difficulty` / `data-platform` /
+    `data-tags`. So this is a `data-category` on the card plus pills with
+    `data-filter-key="category"`, not new filter code.
+  - **Do NOT swap the axis globally.** HackTheBox and VulnHub group by difficulty legitimately and must
+    keep the difficulty rail. `PlatformIndex` needs a per-platform notion of what its middle segment
+    MEANS, resolved from the platform rather than assumed, in the same spirit as `mode="wargames"`.
+  - **The design half is the real work, and it is a values exercise.** The six category hues must NOT
+    borrow the difficulty palette (easy green / medium amber / hard red / misc slate): it carries the
+    wrong meaning and, per Open bugs below, all four of those pills already FAIL WCAG AA on light in both
+    states. Derive a six-hue set that sits with the PicoCTF purple lead (`--pf-accent` `#d96bff` dark /
+    `#8b3dc4` light) and the universal cyan secondary, measure each against the real element on paper
+    before adopting, and note the same hues drive `.pi-bd-*` in the hero breakdown, so one decision
+    covers rail and breakdown together. Both themes.
 - [CONTENT] Mass-import ~50 existing writeups via the pipeline (HTB / VulnHub / PicoCTF / OTW), each as a
   flat `.mdx` with images under the parallel `src/assets` tree (DECISIONS 2026-06-30). Once HTB
   Medium/Hard folders have content, uncomment those (lowercase) sidebar groups in `astro.config.mjs`.
