@@ -1070,7 +1070,10 @@ than the challenge is worse than one without it. Reference file:
      4, `busqueda` 1 of 13).
   3. **The mark lands on what the prose consumes.** In a fence carrying commands AND output that is
      almost always the OUTPUT: the value, the grant, the line the next paragraph works on. `busqueda` and
-     `n0s4n1ty-1` both mark `(ALL) NOPASSWD: ALL` rather than the `sudo -l` that produced it. Never a
+     `n0s4n1ty-1` both mark `(ALL) NOPASSWD: ALL` rather than the `sudo -l` that produced it; `red` marks
+     two `exiftool` fields rather than `exiftool`; `verify` marks the matched digest rather than the
+     `sha256sum` that found it. Marking the command instead is the standard way this test fails, and it
+     is invisible while writing because the command is what you were thinking about. Never a
      banner, never a heading line inside program output, never a masked `<flag>` (the `PasswordReveal`
      beneath it already does that job), never a log dump, never a whole session.
 
