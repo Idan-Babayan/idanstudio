@@ -139,7 +139,29 @@ export default defineConfig({
         {
           label: 'PicoCTF',
           collapsed: true,
-          items: [{ autogenerate: { directory: 'picoctf', collapsed: true } }],
+          items: [
+            // Manual structure, same reason as HackTheBox: an autogenerate over the whole platform
+            // labels each middle-tier group with the RAW LOWERCASE DIRECTORY NAME, so the category
+            // tier would read "binary-exploitation" instead of "Binary Exploitation", and the
+            // platform's own index.mdx would render as a second "PicoCTF" entry nested under the
+            // group of the same name. Naming the groups here fixes both and lets the categories sit
+            // in a chosen order rather than alphabetically. Within a category, autogenerate's
+            // alphabetical order is correct: PicoCTF challenges are standalone, not sequential, so
+            // no page carries a sidebar.order.
+            // The SIX official picoCTF categories, in the platform's own order, each a collapsed
+            // toggle. There is no per-category index page and none is wanted: the toggle IS the
+            // middle tier, exactly as HackTheBox's Easy / Medium groups are.
+            // Each stays commented until its directory exists and holds a writeup: an
+            // autogenerate.directory that does not exist fails the build (same reason HTB Hard is
+            // commented out). Uncomment a line when its first writeup lands.
+            { label: 'Overview', link: '/picoctf/' },
+            // { label: 'General Skills', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/general-skills' } }] },
+            // { label: 'Cryptography', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/cryptography' } }] },
+            // { label: 'Web Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/web-exploitation' } }] },
+            // { label: 'Forensics', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/forensics' } }] },
+            // { label: 'Reverse Engineering', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/reverse-engineering' } }] },
+            // { label: 'Binary Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/binary-exploitation' } }] },
+          ],
         },
         {
           label: 'OverTheWire',
