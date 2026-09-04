@@ -918,13 +918,26 @@ underscore.
 - Long/indented code → wrapped in `<Toggle>`; all code blocks get `frame="code"` + a
   language `title` so bash and python look identical.
 - Notion `<aside>` → `:::tip[Answer]`. Task headings → brown `.task-title`.
-- **Flags:** emit the gold heading `### <span class="task-title">User Flag</span>` (or `Root Flag`)
-  immediately followed by `<FlagCapture type="user" flag="..." />` (or `type="root"`), and add
+- **Flags, MACHINES ONLY (HackTheBox and VulnHub):** emit the gold heading
+  `### <span class="task-title">User Flag</span>` (or `Root Flag`) immediately followed by
+  `<FlagCapture type="user" flag="..." />` (or `type="root"`), and add
   `import FlagCapture from '@components/FlagCapture.astro'`. This replaces the old heading + duplicate
   `<Toggle flag>` + `:::tip[Answer]`. Handle user-only and root-only writeups (emit only the flag that
   exists). See DECISIONS 2026-06-27.
-- **Wargame secrets:** emit `PasswordReveal` at the point in the walkthrough where the secret is obtained
-  (not frontmatter, not appended at the end). Pick the mode by the secret's SHAPE, never by preference:
+  **`FlagCapture` is RESERVED for those two platforms (2026-09-03, owner instruction).** A simple
+  challenge (OverTheWire Bandit, PicoCTF) uses `PasswordReveal` instead, per the bullet below. The split
+  is not password vs flag, it is CHALLENGE vs MACHINE: a Bandit level and a PicoCTF challenge are a few
+  commands and a string, while a box is a trophy that earns the gold decode ceremony. Do not reach for
+  `FlagCapture` on a new platform without deciding which side of that line it sits on.
+- **Challenge secrets (`PasswordReveal`), on OverTheWire and PicoCTF:** emit it at the point in the
+  walkthrough where the secret is obtained (not frontmatter, not appended at the end), with NO heading
+  above it, directly under the code block whose output is masked (`<password>` on Bandit, `<flag>` on
+  PicoCTF). The `term` prop names the secret: it defaults to `"Password"`, so every Bandit page is
+  unchanged, and PicoCTF passes `<PasswordReveal term="Flag" password="picoCTF{...}" />` to render the
+  label FLAG and announce "Flag revealed" / "Flag copied". `term` changes the NOUN only: the amber
+  identity, the blur and the absence of the decode scramble all stay, because they now mark
+  challenge-vs-machine rather than password-vs-flag (see the flags bullet above).
+  Pick the mode by the secret's SHAPE, never by preference:
   - one-line password → `<PasswordReveal password="..." />` (inline: blurs in place, copyable).
   - multi-line secret, e.g. an RSA private key → `<PasswordReveal label="Reveal private key">` wrapping a
     fenced block, then `</PasswordReveal>` (block: collapses). Truncate the key first (see the
