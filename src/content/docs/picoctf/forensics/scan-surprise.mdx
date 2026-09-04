@@ -1,0 +1,34 @@
+---
+title: Scan Surprise
+description: "PicoCTF Scan Surprise: the flag is handed over as a picture of itself, and the only forensics is noticing that the pixels are the payload."
+environment: Standalone
+---
+
+> Goal: an archive that unpacks into a small home directory holding one PNG. The picture is a QR code and the flag is what it encodes.
+
+## Approach
+
+Fetch the archive and unpack it. It expands into a tree rather than a bare file, which is how these challenges hand over an artefact with the path it was found at.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Scan_Surprise]
+└─> wget https://artifacts.picoctf.net/c_atlas/16/challenge.zip
+┌──(Idan@Kali)-[~/Scan_Surprise]
+└─> unzip challenge.zip
+┌──(Idan@Kali)-[~/Scan_Surprise/home/ctf-player/drop-in]
+└─> subl flag.png
+```
+
+Sublime Text renders an image rather than showing its bytes, so it doubles as the viewer here, and what it renders is a QR code. Nothing about the file is disguised: it is a PNG, it opens as a PNG, and the flag is drawn inside it.
+
+The route taken from there was an online decoder, `qrcoderaptor.com`, which takes an upload and prints the payload. It works, and it is one browser tab. It also sends the challenge artefact to somebody else's server, and the challenge's own hint already names the tool that avoids that: `zbarimg flag.png`, from the `zbar-tools` package, reads the same code offline and prints the string to the terminal.
+
+<PasswordReveal term="Flag" password="picoCTF{p33k_@_b00_7843f77c}" />
+
+The eight characters before the brace belong to the artefact rather than the challenge, so another copy of the same puzzle closes on a different tail.
+
+## Why it works
+
+Nothing is hidden and nothing is embedded. The flag is not in a chunk, a comment field or a low bit somewhere, which is why `strings` finds nothing worth having: it was never stored as text at all. It is a shape, and the layer that carries it sits above the file format entirely. Recognising that the container has told you everything it can is most of what this category trains.
+
+The reason the shape survives being photographed, cropped and re-saved is that a QR code carries Reed-Solomon parity alongside its data, enough to reconstruct the payload with a good fraction of the modules unreadable. That redundancy is why a phone camera pointed at a monitor works as well as the original file does, and why an image of an image still resolves.
