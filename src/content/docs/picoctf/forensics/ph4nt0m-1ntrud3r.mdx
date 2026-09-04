@@ -19,7 +19,9 @@ The download is a `.pcap`, so this is Wireshark rather than a shell. The artefac
 
 The capture opens in frame order, which is file order, because that is all Wireshark does by default: it shows what the file holds and applies no sort of its own. The timestamps in this file do not climb with the frame numbers, which is the entire challenge. Clicking the Time column header sorts the display by timestamp, and only the display, so the frame numbers stay where they are and the file on disk is untouched.
 
-Sorted that way the traffic separates into a long stretch of short payloads and then a run of longer ones at the end. Select one of those, expand the TCP layer, right click the payload field and choose Show Packet Bytes, then set Decode as to Base64 and Show as to ASCII. The later packets come back as clean readable text, seven characters at a time. Everything before them decodes to bytes that are not text at all, which is what the capture is padded with.
+### Reading the payloads
+
+Sorted by time, the traffic separates into a long stretch of short payloads and then a run of longer ones at the end. Select one of those, expand the TCP layer, right click the payload field and choose Show Packet Bytes, then set Decode as to Base64 and Show as to ASCII. The later packets come back as clean readable text, seven characters at a time. Everything before them decodes to bytes that are not text at all, which is what the capture is padded with.
 
 Length is a good first look and a poor filter. Six of the seven slices are seven characters, which base64 stretches to twelve, but the last slice is the closing brace on its own and encodes to four, making the packet that carries the end of the flag the shortest in the run. What actually separates signal from padding is that one decodes to readable ASCII and the other does not. Read the run top to bottom in the sorted order and the slices concatenate.
 
