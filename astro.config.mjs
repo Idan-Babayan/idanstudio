@@ -160,7 +160,7 @@ export default defineConfig({
             // { label: 'Web Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/web-exploitation' } }] },
             // { label: 'Forensics', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/forensics' } }] },
             // { label: 'Reverse Engineering', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/reverse-engineering' } }] },
-            // { label: 'Binary Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/binary-exploitation' } }] },
+            { label: 'Binary Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/binary-exploitation' } }] },
           ],
         },
         {
