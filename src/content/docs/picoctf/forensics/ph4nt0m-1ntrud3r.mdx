@@ -1,0 +1,34 @@
+---
+title: Ph4nt0m 1ntrud3r
+description: "PicoCTF Ph4nt0m 1ntrud3r: the flag was exfiltrated one slice per packet, and the capture was written with its timestamps out of order so that frame order is the wrong order."
+environment: Standalone
+---
+
+> Goal: a packet capture of a staged intrusion. Every packet carries a short base64 payload, the flag left one slice at a time, and the frames are not stored in the order they were sent.
+
+## Approach
+
+The download is a `.pcap`, so this is Wireshark rather than a shell. The artefact link is generated per instance; copy the one on your own challenge page rather than the one below.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Ph4nt0m_1ntrud3r]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/a917f567b9cc0f1a730a7801b309955df4d2234a8114326857b9759e9e5d0453/myNetworkTraffic.pcap
+┌──(Idan@Kali)-[~/Ph4nt0m_1ntrud3r]
+└─> wireshark myNetworkTraffic.pcap
+```
+
+The capture opens in frame order, which is file order, because that is all Wireshark does by default: it shows what the file holds and applies no sort of its own. The timestamps in this file do not climb with the frame numbers, which is the entire challenge. Clicking the Time column header sorts the display by timestamp, and only the display, so the frame numbers stay where they are and the file on disk is untouched.
+
+Sorted that way the traffic separates into a long stretch of short payloads and then a run of longer ones at the end. Select one of those, expand the TCP layer, right click the payload field and choose Show Packet Bytes, then set Decode as to Base64 and Show as to ASCII. The later packets come back as clean readable text, seven characters at a time. Everything before them decodes to bytes that are not text at all, which is what the capture is padded with.
+
+Length is a good first look and a poor filter. Six of the seven slices are seven characters, which base64 stretches to twelve, but the last slice is the closing brace on its own and encodes to four, making the packet that carries the end of the flag the shortest in the run. What actually separates signal from padding is that one decodes to readable ASCII and the other does not. Read the run top to bottom in the sorted order and the slices concatenate.
+
+<PasswordReveal term="Flag" password="picoCTF{1t_w4snt_th4t_34sy_tbh_4r_959f50d3}" />
+
+The eight hexadecimal characters near the end are minted per instance, so the fifth and sixth slices are different for everyone and only the first four are shared.
+
+## Why it works
+
+Slicing a secret across packets defeats anything inspecting one packet at a time, and base64 defeats anything grepping for the literal string, but neither survives reassembly, and reassembly is what a capture is for. The only defence with any teeth here is the ordering, because a reader who trusts frame numbers reassembles the right pieces in the wrong sequence and gets something that looks like a flag and is not one.
+
+Frame numbers are assigned as the file is read, so they record the order somebody wrote the packets down, not the order the packets happened. Captures that are out of order in that sense are ordinary, which is why Wireshark presents the file as it stands and leaves the sorting to whoever is reading it.
