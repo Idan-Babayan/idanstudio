@@ -1010,12 +1010,22 @@ than the challenge is worse than one without it. Reference file:
      service), since the reader has not seen the challenge.
   2. `## Approach`, opening with PROSE, never with a subheading. Fences and prose alternate.
   3. `<PasswordReveal term="Flag" password="picoCTF{...}" />`, with NO heading above it, directly under
-     the fence whose flag output is masked as `<flag>`. **Where no such fence can exist, it follows the
-     prose instead** (`ph4nt0m-1ntrud3r`): that challenge's solve IS the flag arriving in seven readable
-     slices, so any fence showing the intermediate values would print the answer in full and defeat the
-     masking. Masking wins over the layout convention. Do not invent a terminal transcript to have
-     something to mask, and do not reconstruct payloads that were never recorded.
-  4. `## Why it works`, two to four sentences. One idea, not a lecture.
+     the fence whose flag output is masked as `<flag>`. **Where the recorded route produced no maskable
+     fence, it follows the prose (or an image caption) instead.** That is not a rare exception: five of
+     the nineteen PicoCTF pages sit this way, plus two Bandit pages. `ph4nt0m-1ntrud3r`'s solve IS the
+     flag arriving in seven readable slices, so any fence showing the intermediate values would print the
+     answer in full and defeat the masking; `red` decoded in CyberChef, `get-ahead` read the flag from a
+     Burp response header, `scan-surprise` uploaded to a browser decoder, and `insp3ct0r` assembles it
+     from three fences none of which can be masked alone. Masking wins over the layout convention.
+     **Do not invent a terminal transcript to have something to mask**, and do not reconstruct payloads
+     that were never recorded. Read that prohibition first: this bullet used to name only `ph4nt0m`, and
+     a page whose solve happened in a browser then reads as a violation, which invites exactly the
+     fabricated `zbarimg` capture the rule forbids.
+  4. `## Why it works`, one or two paragraphs. One idea, not a lecture. The measured corpus norm is five
+     to seven sentences and roughly 100 to 190 words (nineteen pages, 2026-09-04; `pie-time` 5/102,
+     `ph4nt0m` 4/126, `stonks` 8/183). The earlier "two to four sentences" was never true of any page but
+     one and condemned the reference page, so it was fired at spuriously in review; the number is
+     descriptive, and one idea carried well is still the actual test.
 - **How it degrades and stretches.** A two-command challenge is two fences and three sentences; that is
   the whole page and it is finished. A long one adds FENCES, not sections, and puts any log dump behind a
   `<Toggle>` so the visible fence stays short. **Subheadings:** zero is normal. One `###` inside
@@ -1044,10 +1054,31 @@ than the challenge is worse than one without it. Reference file:
   fence title is neither, and neither substitutes for one.
   **Callouts are available and the default is none.** A PicoCTF page carrying three of them
   is over-explained; Bandit carries zero.
-- **Line highlighting marks what the reader must SEE, and nothing else.** In a terminal session that is
-  the typed commands, or the one or two values the next step consumes. Never a log dump, never a heading
-  line inside program output, and never a whole session. Highlighting is per fence, so re-count the line
-  numbers after any edit: a stale `{3,7}` silently marks the wrong rows and still builds.
+- **Line highlighting is a SELECTION, and a selection needs a field.** A tint answers exactly one
+  question, *which line?*, so it earns its place only where that question is live, and it must land on the
+  line the surrounding prose actually uses. Three tests, all required (derived 2026-09-04 from a census of
+  all 41 highlighted fences in the repo, after the owner rejected four newly authored ones):
+  1. **More than one candidate exists.** A fence whose rows are all the same kind of thing (three setup
+     commands, a two-line excerpt, a session whose whole progression is the content) has no minority to
+     select and takes NONE. This is why all 37 Bandit fences and `scan-surprise` carry no highlighting,
+     and that is correct rather than an omission.
+  2. **The fence's own structure has not already answered it.** A shell prompt (`└─>`, `$`, `(gdb)`) is
+     itself a selector, so where a fence holds ONE command that command is already picked out and tinting
+     it says nothing the fence did not. The program chatter around it is noise the reader is skipping, not
+     a field of candidates. A command becomes markable only once the prompt has stopped selecting, which
+     is to say when several are typed and only some do the work (`even-rsa` marks 1 of 5, `disko-1` 2 of
+     4, `busqueda` 1 of 13).
+  3. **The mark lands on what the prose consumes.** In a fence carrying commands AND output that is
+     almost always the OUTPUT: the value, the grant, the line the next paragraph works on. `busqueda` and
+     `n0s4n1ty-1` both mark `(ALL) NOPASSWD: ALL` rather than the `sudo -l` that produced it. Never a
+     banner, never a heading line inside program output, never a masked `<flag>` (the `PasswordReveal`
+     beneath it already does that job), never a log dump, never a whole session.
+
+  **Marking 100% of a category selects nothing**, and is the same defect as marking a lone command.
+  The reference page is the model on both counts: `pie-time` leaves its solitary
+  `nc rescued-float.picoctf.net 55551` bare and marks the leaked address and the address typed back.
+  Highlighting is per fence, so re-count the line numbers after any edit: a stale `{3,7}` silently marks
+  the wrong rows and still builds.
 - **A fence is titled by WHERE IT STARTS.** A fence opening on the local machine (the `Idan@Kali` prompt)
   is `Bash`, even when an `ssh` typed inside it continues on a remote host; a fence opening on a remote
   prompt is `SSH`. Bandit titles each fence with the level prompt (`bandit12@bandit`) because the level
