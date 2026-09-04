@@ -550,6 +550,28 @@ token is an open ROADMAP item, not a bug.
   none reaches into Starlight internals.** That is the constraint that keeps an override additive
   rather than a fork: a deep import into an internal path would bind to a private module that
   Starlight can move in a patch release, with no deprecation and no build error.
+  **ONE documented exception:** `MarkdownContent.astro` imports its `Default` from
+  `starlight-image-zoom/overrides/MarkdownContent.astro`. That is a plugin's PUBLISHED `overrides/`
+  path, not a Starlight internal, and the rule below is why it has to be.
+- **A user override SILENCES a plugin's override of the same component, and nothing warns.** A Starlight
+  plugin claims a component in its `config:setup` hook, and a well-behaved one yields to the site:
+  `starlight-image-zoom` runs `if (!config.components?.MarkdownContent)` before assigning its own. So
+  naming ANY `MarkdownContent` override in `astro.config.mjs` makes the plugin skip its override, with a
+  green build, no error and no message. Its `<ImageZoom />` element, which carries BOTH the zoom script
+  and the zoom stylesheet, then never renders, and image zoom dies on every writeup at once. Chaining
+  through the plugin's own override restores it and is exactly equivalent otherwise, because that file is
+  only `<ImageZoom /><StarlightMarkdownContent><slot /></StarlightMarkdownContent>`.
+  - **The tell is TWO symptoms, and neither names the cause.** Zoom stops working, AND the italic caption
+    under every content image gets a clickable first character: with the plugin stylesheet gone,
+    `.starlight-image-zoom-control` falls back to `position: static` and lays out inline in the following
+    text run, landing on the caption's opening characters. Chasing either symptom alone misses it.
+  - **Standing check: adding an entry to `components:` requires checking every Starlight plugin for a
+    claim on that same component,** and chaining through the plugin's override when one exists. The check
+    is PER COMPONENT, not per plugin: `PageSidebar` and `Head` are unclaimed, which is why the two earlier
+    overrides were safe and the third was not. No build guard is possible or planned, because a plugin's
+    claims live inside its own hook and nothing exposes the overrides it WOULD have taken.
+  - See DECISIONS 2026-09-03 · A component override in `astro.config.mjs` silently disables a Starlight
+    plugin's override of the same component.
 - Starlight Component Overrides: Additive Starlight component overrides are an approved architectural pattern alongside the `src/styles/` theme modules and custom components.
 - Override Strategy: Overrides should wrap and render `<Default />` (or the upstream component) and layer behavior, styling, or markup on top rather than copying or replacing upstream implementations.
 - No Forking by Default Forking, duplicating, or fully replacing Starlight components is discouraged and should only be considered when the desired result cannot be achieved through an additive override.

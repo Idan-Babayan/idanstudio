@@ -6,6 +6,60 @@
 
 ---
 
+### 2026-09-03 · A component override in `astro.config.mjs` silently disables a Starlight plugin's override of the same component
+
+- **Context, not a supersession:** 2026-09-03 · The Principle coda keeps the pager, and `principle:` is
+  HackTheBox-only with a build guard introduced the `MarkdownContent` override this entry repairs.
+  Nothing in that entry is retired and it is not archived: the coda is still appended by an additive
+  override rendering `<Default><slot />{coda}</Default>`, still HackTheBox-only, still guarded. The only
+  thing that changes is which module `Default` resolves to, which that entry never states.
+- **Decision:** `src/components/overrides/MarkdownContent.astro` imports its `Default` from
+  `starlight-image-zoom/overrides/MarkdownContent.astro`, NOT from
+  `@astrojs/starlight/components/MarkdownContent.astro`. The plugin's override is itself
+  `<ImageZoom /><StarlightMarkdownContent><slot /></StarlightMarkdownContent>`, so chaining through it is
+  exactly Starlight's behaviour plus the zoom, and the coda still lands inside the real
+  `.sl-markdown-content`.
+- **The failure, and why it is silent.** `starlight-image-zoom` claims `MarkdownContent` DEFENSIVELY. Its
+  `config:setup` hook runs `if (!config.components?.MarkdownContent)` before assigning its own override,
+  so it yields to a user override rather than fighting it. Naming ANY `MarkdownContent` override in
+  `astro.config.mjs` therefore makes the plugin skip its own, with no warning, no error, and a green
+  build. Its `<ImageZoom />` element, which carries BOTH the zoom script and the zoom stylesheet, never
+  renders. Image zoom died on every writeup the moment the coda override landed, and was found the same
+  day while authoring the first PicoCTF page.
+- **Two symptoms, one cause,** which is the reason this is worth an entry rather than a commit message.
+  (1) No zoom anywhere, on all 13 content images. (2) The italic caption under every content image had a
+  clickable first character: with the plugin stylesheet absent, `.starlight-image-zoom-control` fell back
+  to `position: static` and laid out INLINE in the following text run, landing on the caption's opening
+  characters. Symptom 2 was reported as a caption bug and symptom 1 as a plugin bug; they are the same
+  defect, and chasing either one alone would have missed it.
+- **Why no build guard catches this,** and why one is not being written. A Starlight plugin's component
+  claims are internal to its `config:setup` hook, which receives the config and mutates it; nothing
+  exposes "the overrides this plugin WOULD have taken" for another pass to compare against. A guard would
+  have to hardcode each plugin's claim list and re-derive it on every upgrade, which is a second source
+  of truth for a two-plugin site. The mitigation is the standing rule below plus a comment at the import
+  in `MarkdownContent.astro` naming the trap, placed where the next person will be editing.
+- **Standing rule:** adding an entry to `components:` in `astro.config.mjs` requires checking every
+  Starlight plugin for a claim on that same component, and chaining through the plugin's override when
+  one exists. Today that is `starlight-image-zoom` and `MarkdownContent`. The check is per component, not
+  per plugin: `PageSidebar` and `Head` were both safe, which is why the collision went unnoticed for two
+  prior overrides.
+- **Rejected:** moving the coda back to a `Footer` seam to free the slot (that seam deleted the page's
+  pagination, which is the entire reason the coda moved to `MarkdownContent`); re-implementing
+  `<ImageZoom />` inside our override (forks plugin internals, drifts on upgrade, and is exactly the
+  "never rebuild a Starlight component" rule); dropping `starlight-image-zoom` (screenshots on writeups
+  want zoom, and the caption bug would survive anyway since it comes from the plugin's own stylesheet);
+  ordering `plugins` after `components` in the config (the guard is a value test, not an order test, so
+  it changes nothing).
+- **Verified:** build green at 47 pages. On `astro preview` at 1280px:
+  `customElements.get('starlight-image-zoom')` true and the control opens the dialog;
+  `.starlight-image-zoom-control` back to `position: absolute` inside the image (x 315, y 1539) with
+  caption overlap false, against x 296 / y 2060 overlapping a caption box starting x 296 / y 2045 before
+  the fix; Busqueda keeps its coda as the last child inside `.sl-markdown-content` with the pager
+  beneath, and all 7 of its images are zoomable; Bandit unaffected; console clean.
+- **Status:** Adopted + shipped.
+
+---
+
 ### 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard
 - **Supersedes in part:** 2026-07-04 · Principle coda auto-appends from frontmatter; JetBrains Mono
   italic loaded. Only the "Auto-append" bullet dies: the Footer seam, the pagination suppression ("the
