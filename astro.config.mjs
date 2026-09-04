@@ -156,7 +156,7 @@ export default defineConfig({
             // commented out). Uncomment a line when its first writeup lands.
             { label: 'Overview', link: '/picoctf/' },
             { label: 'General Skills', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/general-skills' } }] },
-            // { label: 'Cryptography', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/cryptography' } }] },
+            { label: 'Cryptography', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/cryptography' } }] },
             { label: 'Web Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/web-exploitation' } }] },
             { label: 'Forensics', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/forensics' } }] },
             // { label: 'Reverse Engineering', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/reverse-engineering' } }] },
