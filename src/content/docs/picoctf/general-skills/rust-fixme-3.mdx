@@ -1,0 +1,59 @@
+---
+title: Rust fixme 3
+description: "PicoCTF Rust fixme 3: the last of the three, where nothing is misspelled, nothing is mistyped, and the only fault in the file is two slashes."
+environment: Standalone
+---
+
+> Goal: the third Rust project in the set. Everything the first two taught is already applied, and the fault this time is that a block the challenge wrote for you has been commented out.
+
+## Approach
+
+Same opening as before: fetch, unpack, read `src/main.rs`. The toolchain went on the box during the first challenge, so `cargo` is already there.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Rust_fixme_3]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/dcdaf491b35c1d0f5075e9583edbbb7aaea1dffb6ad32bc000e4d87b5200ff7b/fixme3.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_3]
+└─> gunzip fixme3.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_3]
+└─> tar -xf fixme3.tar
+```
+
+The file is longer than the previous two and, unusually for this set, already correct in every way they taught: `decrypt` takes a `&mut String`, `main` hands it `&mut party_foul`, and the binding is declared `let mut`. What is different is the decryption body. Rather than reading the `Vec<u8>` that `decrypt_vec` hands back, it pulls a raw pointer and a length out of that vector and rebuilds a slice from the pair, with a comment block above it pointing at the Rust book's chapter on unsafe code.
+
+That comment is not decoration, it is the hint. Two lines in the block carry a `//` and everything between them does not.
+
+```rust frame="code" title="src/main.rs, the block as shipped" {1,13}
+    // unsafe {
+        // Decrypt the flag operations
+        let decrypted_buffer = xrc.decrypt_vec(encrypted_buffer);
+
+        // Creating a pointer
+        let decrypted_ptr = decrypted_buffer.as_ptr();
+        let decrypted_len = decrypted_buffer.len();
+
+        // Unsafe operation: calling an unsafe function that dereferences a raw pointer
+        let decrypted_slice = std::slice::from_raw_parts(decrypted_ptr, decrypted_len);
+
+        borrowed_string.push_str(&String::from_utf8_lossy(decrypted_slice));
+    // }
+```
+
+With the braces commented out the body is still live, it is simply no longer inside anything, so `std::slice::from_raw_parts` gets called at plain function-body level. `cargo build` rejects exactly that one line as `E0133`, a call to an unsafe function that requires an unsafe function or block. Deleting the two `//` is the entire fix, and there is nothing else to change.
+
+```bash frame="code" title="Bash" {2}
+┌──(Idan@Kali)-[~/Rust_fixme_3/fixme3]
+└─> cargo run
+   Compiling rust_proj v0.1.0
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.25s
+     Running `target/debug/rust_proj`
+Using memory unsafe languages is a: PARTY FOUL! Here is your flag: <flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{n0w_y0uv3_f1x3d_1h3m_411}" />
+
+## Why it works
+
+`unsafe` does not switch anything off. The borrow checker, the type system and the ownership rules all still apply inside the block; what the keyword unlocks is a short list of five abilities the compiler cannot verify on its own, one of which is calling a function marked unsafe. `from_raw_parts` is on that list because nothing in its signature can prove the pointer is valid for the length given, correctly aligned, and not going to be mutated while the slice is alive. Those are obligations, and `unsafe` is where the author accepts them.
+
+The joke of this particular file is that the obligations are already met and always were. The pointer and the length come from a vector that stays alive for the whole block, and the slice being rebuilt is the same one `&decrypted_buffer` would have handed over for free. That is why commenting out the braces produces a compile error rather than a crash: the code was sound the entire time, it just was not allowed to say so.
