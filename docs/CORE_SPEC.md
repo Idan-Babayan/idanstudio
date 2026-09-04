@@ -1021,7 +1021,28 @@ than the challenge is worse than one without it. Reference file:
   `<Toggle>` so the visible fence stays short. **Subheadings:** zero is normal. One `###` inside
   `## Approach` is fine where the challenge genuinely pivots (local measurement, then the live instance),
   but only AFTER prose has followed the `##`, never immediately under it, which makes the `##` read as
-  decoration. **Callouts are available and the default is none.** A PicoCTF page carrying three of them
+  decoration. Three further tests, all from the 2026-09-04 audit that added the second and third `###`
+  in the corpus (`stonks`, `ph4nt0m-1ntrud3r`) and rejected the other thirteen pages:
+  - **LENGTH AND FLATNESS ARE NOT THE CRITERION, and reaching for them is the standard error.** `pie-time`
+    has one of the FLATTEST Approach sections in the set and is the reference page. Measured longest
+    unbroken prose runs: ph4nt0m 248, ssti1 173, hashcrack 172, stonks 170, get-ahead 148, so no
+    threshold separates the pages that earned one from the pages that did not. A genuine pivot does.
+  - **The backward-reference test, which is mechanical and decides most cases.** A `###` must not land
+    directly above a sentence that reaches back across it. Every rejected candidate failed exactly here
+    (`Two is the only even prime` answering the paragraph before it on even-rsa; `Send them to Repeater`
+    on get-ahead), and both accepted pages needed a one-clause prose fix to pass it (`Converted back to
+    bytes it is` became `the leak is`; `Sorted that way` became `Sorted by time`). If the seam cannot be
+    made to pass without rewriting real content, the page does not want a heading.
+  - **Depth: a `###` is a CODA, not a chapter break.** `pie-time`'s sits about 85% into its Approach and
+    `stonks`' about two thirds in. One placed 15% in turns the `##` into a one-paragraph preamble, which
+    is the same defect as placing it immediately under the `##` and is why `ssti1` was rejected despite
+    carrying the most prose of any page.
+  - **Sentence case, deliberately.** All three PicoCTF `###` are sentence case; all seventeen in the
+    HackTheBox corpus are Title Case. Do not "normalise" the PicoCTF ones for consistency.
+  A `###` also earns a nested `--depth: 1` row in both the desktop and mobile table of contents (cyan,
+  per `chrome.css`), so it is a navigational object and not only a visual break. An image or a changed
+  fence title is neither, and neither substitutes for one.
+  **Callouts are available and the default is none.** A PicoCTF page carrying three of them
   is over-explained; Bandit carries zero.
 - **Line highlighting marks what the reader must SEE, and nothing else.** In a terminal session that is
   the typed commands, or the one or two values the next step consumes. Never a log dump, never a heading
