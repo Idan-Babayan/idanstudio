@@ -1017,6 +1017,8 @@ than the challenge is worse than one without it. Reference file:
      answer in full and defeat the masking; `red` decoded in CyberChef, `get-ahead` read the flag from a
      Burp response header, `scan-surprise` uploaded to a browser decoder, and `insp3ct0r` assembles it
      from three fences none of which can be masked alone. Masking wins over the layout convention.
+     A third shape exists and is fine: `stonks` sits under the `unscramble.py` SOURCE fence, because the
+     script it shows is what produces the flag and no run of it was recorded.
      **Do not invent a terminal transcript to have something to mask**, and do not reconstruct payloads
      that were never recorded. Read that prohibition first: this bullet used to name only `ph4nt0m`, and
      a page whose solve happened in a browser then reads as a violation, which invites exactly the
