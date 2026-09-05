@@ -5,11 +5,11 @@ os: Linux
 environment: Standalone
 ---
 
-> Goal: the box hands you a single SHA-256 digest, a directory of files with meaningless names, and a script that decrypts the right one. Work out which file the digest describes.
+> Goal: the box hands you a single SHA-256 digest, a directory of files with anonymous names, and a script that decrypts the right one. Work out which file the digest describes.
 
 ## Approach
 
-Log in over SSH with the port and password from the challenge page. The home directory holds three things: a checksum, a decrypt script owned by root, and a `files/` directory.
+Log in over SSH as `ctf-player` on `rhea.picoctf.net`, with the port and password from the challenge page. The session lands in a directory holding three things: a checksum, a decrypt script owned by root, and a `files/` directory.
 
 ```bash frame="code" title="SSH"
 ctf-player@pico-chall$ ls -la
@@ -38,6 +38,6 @@ The eight characters closing the flag are the name of the file that matched. Bot
 
 ## Why it works
 
-A digest covers a file's content bytes and nothing else, so the anonymous eight-character names carry no signal and content is the only thing that can tell the candidates apart. `sha256sum` prints the digest and the filename on the same line, and `grep` prints whole lines, so matching on the half you already have hands back the half you want.
+A digest is a statement about a file's content bytes and nothing else, so it can be checked against content and never against a name. `sha256sum` prints the digest and the filename on the same line, and `grep` prints whole lines, so matching on the half you already have hands back the half you want.
 
 The title is the lesson. A matching digest establishes that the bytes are the ones the reference value describes, which is integrity, and says nothing whatsoever about who produced them. A checksum only carries across whatever trust the digest's own channel already had; it creates none of its own, which is why real distribution signs the digest rather than merely publishing it beside the file.
