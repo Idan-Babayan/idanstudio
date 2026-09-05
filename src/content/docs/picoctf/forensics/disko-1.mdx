@@ -8,7 +8,7 @@ environment: Standalone
 
 ## Approach
 
-Ask `file` what the artefact is before deciding how to open it. The answer is a FAT32 volume, and the more useful half of that answer is what is missing from it: no partition entries. The line opens with "DOS/MBR boot sector" only because `file` recognises the boot signature, which a FAT volume boot record carries just as an MBR does, so nothing here implies a partition table. The filesystem starts at byte zero and there is no offset to work out.
+Ask `file` what the artefact is before deciding how to open it. The answer is a FAT32 volume, and the more useful half of that answer is what is missing from it: no partition entries. The line opens with `DOS/MBR boot sector` because `file` prints that same label for a volume boot record and for a real MBR, and every field after it is read out of this volume's own first sector, so nothing here implies a partition table. The filesystem starts at byte zero and there is no offset to work out.
 
 At which point the shortest route is worth trying before the careful one.
 
@@ -27,7 +27,7 @@ disko-1.dd: DOS/MBR boot sector, code offset 0x58+2, OEM-ID "mkfs.fat", Media de
 
 <PasswordReveal term="Flag" password="picoCTF{1t5_ju5t_4_5tr1n9_e3408eef}" />
 
-There are three prebuilt DISKO 1 images rather than one, so both the flag's last eight characters and that volume serial belong to whichever of the three you were handed. Draw a different one and they may not match.
+There are three prebuilt DISKO 1 images rather than one, and the flag's last eight characters are the only bytes that differ between them. Everything the `file` line reports, that volume serial included, is identical on all three.
 
 ## Why it works
 
