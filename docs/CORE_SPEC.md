@@ -1066,8 +1066,11 @@ than the challenge is worse than one without it. Reference file:
      itself a selector, so where a fence holds ONE command that command is already picked out and tinting
      it says nothing the fence did not. The program chatter around it is noise the reader is skipping, not
      a field of candidates. A command becomes markable only once the prompt has stopped selecting, which
-     is to say when several are typed and only some do the work (`even-rsa` marks 1 of 5, `disko-1` 2 of
-     4, `busqueda` 1 of 13).
+     is to say when several are typed and only some do the work (`forest` marks 1 of 7, and `pie-time`'s
+     `gdb` fence 2 of 3 for the ceremony reason below). Re-check these two examples before citing them:
+     the three that stood here until 2026-09-05 (`even-rsa`, `disko-1`, `busqueda`) were all wrong within
+     a day, two because the tints they named were removed by this very rule and one because it was
+     misread as a command when it marks `nmap` output.
   3. **The mark lands on what the prose consumes.** In a fence carrying commands AND output that is
      almost always the OUTPUT: the value, the grant, the line the next paragraph works on. `busqueda` and
      `n0s4n1ty-1` both mark `(ALL) NOPASSWD: ALL` rather than the `sudo -l` that produced it; `red` marks
