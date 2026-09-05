@@ -8,9 +8,11 @@ environment: Standalone
 
 ## Approach
 
-Looking at the image gets you nowhere, so read what is attached to it rather than what is in it. `exiftool` ships with Kali and installs elsewhere as `libimage-exiftool-perl`, and on this file it turns up a field no camera ever wrote.
+Looking at the image gets you nowhere, so read what is attached to it rather than what is in it. `exiftool` ships with Kali and installs on Debian and Ubuntu as `libimage-exiftool-perl`, and on this file it turns up a field no camera ever wrote.
 
-```bash frame="code" title="Bash" {4,5}
+```bash frame="code" title="Bash" {6,7}
+┌──(Idan@Kali)-[~/RED]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/831307718b34193b288dde31e557484876fb84978b5818e2627e453a54aa9ba6/red.png
 ┌──(Idan@Kali)-[~/RED]
 └─> exiftool red.png
 File Size                       : 796 bytes
@@ -18,9 +20,9 @@ Color Type                      : RGB with Alpha
 Poem                            : Crimson heart, vibrant and bold,.Hearts flutter at your sight..Evenings glow softly red,.Cherries burst with sweet life..Kisses linger with your warmth..Love deep as merlot..Scarlet leaves falling softly,.Bold in every stroke.
 ```
 
-The dots are not punctuation. `exiftool` prints control characters as `.` in its default output, so each one is a line break and the poem is eight lines. Read the first letter of each and it says **CHECKLSB**.
+Seven of those dots are not punctuation. `exiftool` prints control characters as `.` in its default output, so those seven are the line breaks and the poem is eight lines. Read the first letter of each and it says `CHECKLSB`.
 
-That names the technique and the rest of the recipe is in the output above rather than in guesswork. LSB means bit 0. `RGB with Alpha` means four channels, so the extraction has to read all four in order. Load the file itself into CyberChef, not a path or a paste, and the Input length should read 796 to match.
+That names the technique and most of the recipe is in the output above. LSB means bit 0. `RGB with Alpha` means four channels, so the extraction has to read all four in order. Load the file itself into CyberChef, not a path or a paste, and the Input length should read 796 to match.
 
 ![CyberChef recipe pane showing Extract LSB with colour pattern R, G, B and A, pixel order Row and bit 0, followed by From Base64 with the standard alphabet and Remove non-alphabet chars enabled](../../../../assets/picoctf/forensics/red/red-1.png)
 *Six settings, five of which the metadata already told you.*
@@ -31,6 +33,6 @@ The output is 5888 characters rather than 46, because the flag is in there 128 t
 
 ## Why it works
 
-Changing a colour channel's lowest bit moves that sample by one step out of 256, so a red square carrying a full payload and a red square carrying nothing are the same picture to a viewer. The `RGB with Alpha` line is the quiet tell: an image with nothing to hide has no reason to keep an alpha channel on an opaque square, and here a quarter of the payload is living in it.
+Changing a colour channel's lowest bit moves that sample by one step out of 256, so a red square carrying a full payload and a red square carrying nothing are the same picture to a viewer. The `RGB with Alpha` line is the one that shapes the recipe: four channels rather than three, so a quarter of the payload is living in the channel that carries no colour.
 
-The repetition is not redundancy, it is the shape of the container. One row is 128 pixels of four channels at one bit each, which is 512 bits, or exactly 64 bytes. Base64 turns the 46 character flag into exactly 64 characters. So one row holds precisely one encoded copy of the flag with nothing left over, the author tiled it down all 128 rows, and 128 times 46 is the 5888 characters that come back. That arithmetic is also why the alpha channel has to be in the pattern: drop it and a row carries 48 bytes instead of 64, which is not a whole flag and not the boundary the encoder used.
+The repetition is not redundancy, it is the shape of the container. One row is 128 pixels of four channels at one bit each, which is 512 bits, or exactly 64 bytes. Base64 turns the 46 character flag into exactly 64 characters. So one row holds precisely one encoded copy of the flag with nothing left over, the author tiled it down all 128 rows, and 128 times 46 is the 5888 characters that come back.
