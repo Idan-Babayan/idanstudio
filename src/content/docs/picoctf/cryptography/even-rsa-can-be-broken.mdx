@@ -53,7 +53,7 @@ Only `E` is durable. `N` and `Cipher` above are one connection's, and the failur
 
 <PasswordReveal term="Flag" password="picoCTF{tw0_1$_pr!m37dbe6984}" />
 
-The eight characters before the closing brace belong to the instance, so everyone lands on the same joke and a different tail.
+Everyone lands on the same joke and a different tail, but the tail is not something a relaunch changes: two fresh instances handed back this same `7dbe6984`. What does change every time is the challenge's side of it, because `gen_key` runs on connection, so each session mints new primes and hands over a different `N` and a different ciphertext for the one flag sitting in `flag.txt`.
 
 ## Why it works
 
