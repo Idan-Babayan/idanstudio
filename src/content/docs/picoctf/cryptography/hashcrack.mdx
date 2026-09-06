@@ -17,7 +17,7 @@ Connect and the pattern is immediately clear: a bare hex string, a prompt, and n
 
 The algorithm is the thing being withheld. Each stage names it only in the line it prints *after* a correct answer, which is too late to be of any use, so the only clue available in advance is the width of the digest: 32 hex characters, then 40, then 64, which is 128, 160 and 256 bits.
 
-Width narrows the field without settling it. A 128 bit digest is equally consistent with MD4, MD2, NTLM and RIPEMD-128; 160 bits fits RIPEMD-160 as well as SHA-1; 256 bits fits SHA3-256 and BLAKE2s-256.
+Width narrows the field without settling it. A 128 bit digest is equally consistent with MD4, MD2, NTLM and RIPEMD-128. At 160 bits, RIPEMD-160 fits as readily as SHA-1. At 256, SHA3-256 and BLAKE2s-256 both do.
 
 In the event the identification never had to happen at all. CrackStation takes a bare hash with no algorithm selector, searching every table it holds and reporting whichever one matched, so all three stages came back on a paste.
 

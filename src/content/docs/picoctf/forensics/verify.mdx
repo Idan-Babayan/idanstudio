@@ -23,7 +23,7 @@ ctf-player@pico-chall$ cat checksum.txt
 55b983afdd9d10718f1db3983459efc5cc3f5a66841e2651041e25dec3efd46a
 ```
 
-`checksum.txt` holds a bare digest and nothing else, and that detail decides the whole approach. The built-in verifier, `sha256sum -c`, expects each line to carry a digest *and* the filename it belongs to; handed a lone hash it refuses to parse the file at all. So the question has to be turned around: instead of asking whether a named file matches, hash every candidate and look the digest up in the results.
+`checksum.txt` holds a bare digest and nothing else, and that detail decides the whole approach. The built-in verifier, `sha256sum -c`, expects each line to carry a digest *and* the filename it belongs to. Handed a lone hash, it refuses to parse the file at all. So the question has to be turned around: instead of asking whether a named file matches, hash every candidate and look the digest up in the results.
 
 ```bash frame="code" title="SSH" {2}
 ctf-player@pico-chall$ sha256sum files/* | grep "55b983afdd9d10718f1db3983459efc5cc3f5a66841e2651041e25dec3efd46a"
@@ -40,4 +40,4 @@ The eight characters closing the flag are the name of the file that matched. Bot
 
 A digest is a statement about a file's content bytes and nothing else, so it can be checked against content and never against a name. `sha256sum` prints the digest and the filename on the same line, and `grep` prints whole lines, so matching on the half you already have hands back the half you want.
 
-The title is the lesson. A matching digest establishes that the bytes are the ones the reference value describes, which is integrity, and says nothing whatsoever about who produced them. A checksum only carries across whatever trust the digest's own channel already had; it creates none of its own, which is why real distribution signs the digest rather than merely publishing it beside the file.
+The title is the lesson. A matching digest establishes that the bytes are the ones the reference value describes, which is integrity, and says nothing whatsoever about who produced them. A checksum only carries across whatever trust the digest's own channel already had. It creates none of its own, which is why real distribution signs the digest rather than merely publishing it beside the file.
