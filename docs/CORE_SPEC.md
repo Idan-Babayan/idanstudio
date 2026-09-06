@@ -1122,17 +1122,24 @@ than the challenge is worse than one without it. Reference file:
 - **NEVER write that a flag tail is "minted per instance" without evidence for THAT challenge.** The
   phrase sat on five pages and was wrong or unsupported on every one (audit 2026-09-06, five corrected:
   `webdecode`, `verify`, `ph4nt0m-1ntrud3r`, `insp3ct0r`, `even-rsa`). There is no platform default,
-  because picoCTF does something different per challenge: `webdecode` serves ONE fixed flag to every
-  launch (measured, a relaunch returned it byte-identical); `even-rsa` regenerates its modulus on every
-  CONNECTION, since `gen_key` runs at runtime, while `flag.txt` never moves; `verify` hands the same
-  prebuilt directory, `checksum.txt` included, to unrelated strangers; `scan-surprise` binds the tail to
-  the artefact index in `c_atlas/N`; `get-ahead` binds it to a deployment that held the same tail across
-  three years; `super-ssh` rotates the port but keeps both the host key and the flag. Write only what is
-  observed, and prefer "belongs to the deployment" or "varies from copy to copy" over any claim about
-  HOW the value is generated. **A tail seen twice is evidence of a fixed flag, never proof**, because
-  prebuilt variant pools exist (`disko-1` documents three images differing only in the tail). Equally,
-  do not append a consequence the evidence does not carry: "so a reader gets a different tail" is false
-  wherever deployments repeat, which is most of them.
+  because picoCTF does something different per challenge. Each entry below states what was MEASURED, not
+  a mechanism inferred from it, and says how thin the sample is:
+  - `webdecode`: one relaunch returned the flag byte-identical, tail included. Two observations.
+  - `even-rsa`: two connections returned the same flag while `N` and the ciphertext differed both times,
+    because `gen_key` runs at connection time. Two observations. Other solvers do publish other tails.
+  - `super-ssh`: one relaunch rotated the port and returned the same host key and the same flag. Two.
+  - `insp3ct0r`: a picoGym launch returned `302945a7` against the recorded `832b0699`, from a different
+    host, so on this one the tail does track the deployment.
+  - `verify`: five unrelated solvers landed on one tail and three of those print an identical
+    `checksum.txt`, so the directory is prebuilt and reissued rather than generated.
+  - `scan-surprise`: the tail follows the artefact index in `c_atlas/N`; four indices were decoded from
+    the QR pixels and gave four tails.
+  - `get-ahead`: port to tail is one to one across ten public records spanning 2021 to 2024.
+  Write only what is observed, and prefer "belongs to the deployment" or "varies from copy to copy" over
+  any claim about HOW the value is generated. **A tail seen twice is evidence of a fixed flag, never
+  proof**, because prebuilt variant pools exist (`disko-1` documents three images differing only in the
+  tail). Equally, do not append a consequence the evidence does not carry: "so a reader gets a different
+  tail" is TRUE on `insp3ct0r` and FALSE on `webdecode`, so it is checked per challenge, never assumed.
 - **Images:** the site-wide rule applies, alt text for screen readers PLUS a separate italic caption on
   the following line. Prefer one image that carries the technique over several that narrate it.
 
