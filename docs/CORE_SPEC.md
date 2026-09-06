@@ -1119,6 +1119,20 @@ than the challenge is worse than one without it. Reference file:
   where each line went into a browser text box and reached the host through PHP's `system`. A file
   authored rather than executed is titled with its FILENAME (`RSA_decrypt.py`, `shell.php`), which also
   answers the question a bare `php` or `python` title leaves open, namely what to save it as.
+- **NEVER write that a flag tail is "minted per instance" without evidence for THAT challenge.** The
+  phrase sat on five pages and was wrong or unsupported on every one (audit 2026-09-06, five corrected:
+  `webdecode`, `verify`, `ph4nt0m-1ntrud3r`, `insp3ct0r`, `even-rsa`). There is no platform default,
+  because picoCTF does something different per challenge: `webdecode` serves ONE fixed flag to every
+  launch (measured, a relaunch returned it byte-identical); `even-rsa` regenerates its modulus on every
+  CONNECTION, since `gen_key` runs at runtime, while `flag.txt` never moves; `verify` hands the same
+  prebuilt directory, `checksum.txt` included, to unrelated strangers; `scan-surprise` binds the tail to
+  the artefact index in `c_atlas/N`; `get-ahead` binds it to a deployment that held the same tail across
+  three years; `super-ssh` rotates the port but keeps both the host key and the flag. Write only what is
+  observed, and prefer "belongs to the deployment" or "varies from copy to copy" over any claim about
+  HOW the value is generated. **A tail seen twice is evidence of a fixed flag, never proof**, because
+  prebuilt variant pools exist (`disko-1` documents three images differing only in the tail). Equally,
+  do not append a consequence the evidence does not carry: "so a reader gets a different tail" is false
+  wherever deployments repeat, which is most of them.
 - **Images:** the site-wide rule applies, alt text for screen readers PLUS a separate italic caption on
   the following line. Prefer one image that carries the technique over several that narrate it.
 
