@@ -34,7 +34,7 @@ ctf-player@pico-chall$ ./decrypt.sh files/2cdcb2de
 
 <PasswordReveal term="Flag" password="picoCTF{trust_but_verify_2cdcb2de}" />
 
-The eight characters closing the flag are the name of the file that matched. Both are minted per instance, so anyone running this lands on a different filename and a different flag.
+The eight characters closing the flag are the name of the file that matched. Both vary between copies of the challenge, but they come from a small set of prebuilt directories rather than being minted fresh, so two people can land on the same file and the same flag.
 
 ## Why it works
 
