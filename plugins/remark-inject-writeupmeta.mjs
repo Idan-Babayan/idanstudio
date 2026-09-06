@@ -7,6 +7,8 @@
 // os / environment / difficulty come from frontmatter and are all optional: each is forwarded only
 // when it holds a non-empty string, so a progressive wargame with no rating (Bandit) simply omits
 // difficulty and WriteupMeta renders without that chip.
+// It also owns the `principle` scope guard (validatePrinciple below): a frontmatter rule that depends
+// on the file path can only live in the one remark pass that sees both the path and the frontmatter.
 // Reading frontmatter requires the transformer take the vfile as its SECOND argument; a (tree)-only
 // transformer, like the PasswordReveal injector, never sees it.
 // Dependency-free beyond the toolchain: unist-util-visit and acorn both already ship as transitive
@@ -121,13 +123,46 @@ const optedOut = (frontmatter, filePath) => {
   return badges === false;
 };
 
+// `principle` is a HackTheBox-only frontmatter field: the closing coda, rendered by
+// src/components/overrides/MarkdownContent.astro. Anywhere else it is a BUILD ERROR, not a silent
+// no-op. Bandit is a minigame and never carries one, and at 50+ writeups a field that is quietly
+// ignored on the wrong page is how drift starts. Runs on EVERY file, ahead of the writeup gate, so a
+// principle on a hub page or a non-content page is caught too. A non-string or empty value is also
+// rejected (an empty `principle:` parses to null), so a blank coda cannot ship. Optional on
+// HackTheBox by decision (2026-09-03): to make it required later, add one check after the platform
+// gate in the transformer that throws when platform === PRINCIPLE_PLATFORM and the key is absent.
+const PRINCIPLE_PLATFORM = "HackTheBox";
+
+const validatePrinciple = (frontmatter, platform, filePath) => {
+  if (!("principle" in frontmatter)) return;
+
+  const principle = frontmatter.principle;
+  if (!presentString(principle)) {
+    throw new Error(
+      `principle guard: invalid "principle" value ${JSON.stringify(principle)} in ${filePath}. ` +
+        `It must be a non-empty string (the closing maxim); omit the key for no coda.`
+    );
+  }
+  if (platform !== PRINCIPLE_PLATFORM) {
+    throw new Error(
+      `principle guard: "principle" is only valid on a ${PRINCIPLE_PLATFORM} writeup ` +
+        `(src/content/docs/hackthebox/<tier>/<slug>.mdx), found in ${filePath}. ` +
+        `Bandit and the other platforms carry no closing coda; remove the key.`
+    );
+  }
+};
+
 export default function remarkInjectWriteupMeta() {
   return (tree, file) => {
-    const platform = writeupPlatform(file?.path ?? file?.history?.[0]);
-    if (!platform) return;
-
+    const filePath = file?.path ?? file?.history?.[0];
+    const platform = writeupPlatform(filePath);
     const frontmatter = file?.data?.astro?.frontmatter ?? {};
-    if (optedOut(frontmatter, file?.path)) return;
+
+    // The principle guard runs on EVERY file, before the writeup gate, so a stray principle on a hub
+    // or non-content page fails just as loudly as one on a Bandit level.
+    validatePrinciple(frontmatter, platform, filePath);
+    if (!platform) return;
+    if (optedOut(frontmatter, filePath)) return;
 
     let alreadyImported = false;
     visit(tree, (node) => {

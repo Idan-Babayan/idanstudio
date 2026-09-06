@@ -1,0 +1,53 @@
+---
+title: Rust fixme 2
+description: "PicoCTF Rust fixme 2: the same shape as the first, except the compiler is objecting to something that is not a typo."
+environment: Standalone
+---
+
+> Goal: another Rust project that will not build. This time nothing is misspelled and the fix is one idea applied in three places.
+
+## Approach
+
+Same opening as the first: fetch the archive, unpack it, and read `src/main.rs`.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Rust_fixme_2]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/babfbee79718a6363826ba86300173ffde6d81577e9dd07d4130c53a7eecf6c3/fixme2.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_2]
+└─> gunzip fixme2.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_2]
+└─> tar -xf fixme2.tar
+```
+
+The program builds a message in `main`, hands it to `decrypt`, and expects `decrypt` to append to it. That is the whole design, and it is what the compiler objects to: `push_str` needs to mutate the string it is called on, and the function was handed a shared borrow, which is read-only by definition. Rust rejects it as `E0596`, cannot borrow as mutable because it is behind a `&` reference, and points at the `push_str` call, with the suggested repair sitting on the parameter type.
+
+One idea, three places: the parameter has to accept a mutable borrow, the caller has to hand one over, and `party_foul` has to be declared mutable so there is one to hand.
+
+```rust frame="code" title="src/main.rs, shipped line then fixed line"
+fn decrypt(encrypted_buffer: Vec<u8>, borrowed_string: &String)
+fn decrypt(encrypted_buffer: Vec<u8>, borrowed_string: &mut String)
+
+let party_foul = String::from("Using memory unsafe languages is a: ");
+let mut party_foul = String::from("Using memory unsafe languages is a: ");
+
+decrypt(encrypted_buffer, &party_foul);
+decrypt(encrypted_buffer, &mut party_foul);
+```
+
+There is a fourth comment in the file asking how to return in Rust, and it is a decoy. It trails a `return;` that is already there and needs nothing done to it. It is the same prompt the first challenge used on a line that really was broken, left in place here to see whether you are reading the code or the comments.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Rust_fixme_2/fixme2]
+└─> cargo run
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
+     Running `target/debug/rust_proj`
+Using memory unsafe languages is a: PARTY FOUL! Here is your flag: <flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{4r3_y0u_h4v1n5_fun_y31?}" />
+
+## Why it works
+
+The first challenge could be solved without understanding any Rust, because a missing semicolon is a missing semicolon in most languages. This one cannot, and the difference is the point. Nothing here is malformed: `&String` is a perfectly valid type, the call site is syntactically correct, and an immutable binding is the sensible default. The program is rejected because it is asking for something the borrow rules do not permit, which is a class of error most languages discover at runtime or not at all.
+
+What the three edits encode is a single guarantee. A shared borrow says other readers may exist, so nothing may change underneath them. A mutable borrow says this is the only outstanding reference, so changing it is safe. A mutable borrow of a value you own cannot be taken from a binding that never claimed the right to change in the first place, which is why the `let mut` is not a formality but the thing that makes the other two edits legal.

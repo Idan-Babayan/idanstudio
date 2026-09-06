@@ -6,7 +6,7 @@
 
 interface Props {
   label: string;        // accepts plain text or HTML string
-  flag?: boolean;       // flag-reveal toggle: adds .toggle-flag for the lime accent (see custom.css)
+  flag?: boolean;       // flag-reveal toggle: adds .toggle-flag for the lime accent (see components.css)
   class?: string;       // optional extra class for a variant; layered on top of .toggle
 }
 const { label, flag = false, class: className } = Astro.props;

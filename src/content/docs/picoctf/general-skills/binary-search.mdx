@@ -1,0 +1,59 @@
+---
+title: Binary Search
+description: "PicoCTF Binary Search: a guessing game whose ten-guess budget is exactly the minimum a thousand candidates allow, which is the hint."
+os: Linux
+environment: Standalone
+---
+
+> Goal: a game over SSH picks a number between 1 and 1000 and gives you ten guesses. The budget is the hint.
+
+## Approach
+
+The challenge ships an archive. Unpack it and read the game first: it announces its range in the banner, but nothing in the session tells you the budget until it runs out.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Binary_Search]
+└─> wget https://artifacts.picoctf.net/c_atlas/4/challenge.zip
+┌──(Idan@Kali)-[~/Binary_Search]
+└─> unzip challenge.zip
+┌──(Idan@Kali)-[~/Binary_Search/home/ctf-player/drop-in]
+└─> subl guessing_game.sh
+```
+
+`guessing_game.sh` is an ordinary guessing game: a number from 1 to 1000, ten guesses, and the flag printed on a correct answer. Nothing is broken and nothing needs to be, so connect and play it.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Binary_Search]
+└─> ssh -p 65354 ctf-player@atlas.picoctf.net
+ctf-player@atlas.picoctf.net's password:
+Welcome to the Binary Search Game!
+I'm thinking of a number between 1 and 1000.
+Enter your guess: 500
+Higher! Try again.
+Enter your guess: 750
+Higher! Try again.
+Enter your guess: 900
+Lower! Try again.
+Enter your guess: 825
+Higher! Try again.
+Enter your guess: 860
+Lower! Try again.
+Enter your guess: 845
+Lower! Try again.
+Enter your guess: 832
+Lower! Try again.
+Enter your guess: 828
+Lower! Try again.
+Enter your guess: 827
+Congratulations! You guessed the correct number: 827
+Here's your flag: <flag>
+Connection to atlas.picoctf.net closed.
+```
+
+<PasswordReveal term="Flag" password="picoCTF{g00d_gu355_ee8225d0}" />
+
+## Why it works
+
+Each guess comes back higher, lower or correct, so a run of `k` guesses can separate at most `2^k - 1` numbers. Nine guesses cover 511, which is short of a thousand, and ten cover 1023, which is not. Ten is therefore the smallest budget that can possibly work, and it is tight rather than generous: 489 of the thousand possible answers need every one of them.
+
+This run did not actually bisect. Four of the nine guesses, 900, 860, 845 and 832, were not the midpoint of the range still in play, and each risked leaving more candidates standing than halving could. Strict halving reaches 827 in six. Narrowing by eye still landed inside the budget, but it spent slack that a less forgiving answer would have needed.

@@ -24,7 +24,7 @@
    are <button>s whose outline already follows their 6px radius in current engines, so they collapse
    into the shared rule. Adding a new identity element later is just setting --focus-ring on it.
 
-   SCOPE: custom.css themes Starlight CONTENT pages only. The two standalone marketing pages (home,
+   SCOPE: the theme modules style Starlight CONTENT pages only. The two standalone marketing pages (home,
    about) carry their own equivalent rings inline; folding them into this same token is a deliberate
    follow-up, not part of this pass. */
 @layer tokens {

@@ -6,6 +6,150 @@
 
 ---
 
+### 2026-09-03 · WriteupMeta `os` becomes optional: a web challenge has no target operating system
+
+- **Supersedes in part:** 2026-07-19 · WriteupMeta difficulty becomes optional; Bandit's 34 pages migrate
+  off `.machine-meta` (retiring it site-wide). Exactly one claim dies, in that entry's Decision bullet:
+  `difficulty` is no longer "the ONE optional prop on `WriteupMeta`". There are two. Everything else in
+  that entry stands, including the whole difficulty rationale, the Bandit migration, the required-ness
+  probe and the line-ending property, so it stays live and is NOT archived.
+- **Decision:** `os` is optional (`os?: OS`), on exactly the pattern `difficulty` already set. Absent, the
+  OS chip does not render and the row is Platform + Environment. Present, it is still validated, so
+  `os="Linnux"` fails the build. It is never given a fallback. First and only consumer today:
+  `picoctf/web-exploitation/head-dump`, a Node application reached over HTTP.
+- **Why optional, rather than picking a value:** `head-dump` is a URL and a browser. The union is
+  `Linux | Windows` with no honest "not applicable" member, and while the challenge server is
+  overwhelmingly likely to be Linux, that is an inference about infrastructure the writeup never
+  observed, not a fact the solve established. The OS chip is also a NAVIGATIONAL axis, an anchor for the
+  planned `/os` filter route (see ROADMAP), so a guessed value does not merely sit there looking wrong:
+  it files the page under a filter it does not belong to. Same recognition as `Progressive` in the
+  Environment union and as the absent Bandit difficulty: some content is a different SHAPE, not a machine
+  with a missing field.
+- **The interesting part is how long it was wrong.** THREE layers already treated `os` as optional and
+  only the component disagreed. `content.config.ts` declares `os: z.enum([...]).optional()`.
+  `plugins/remark-inject-writeupmeta.mjs` forwards it only when frontmatter holds a non-empty string,
+  precisely so an absent axis renders nothing. CORE_SPEC §7 told authors to declare `os` and §6 said the
+  chip self-hides. Every one of those was written as though the component agreed, and none of them can
+  fail on their own: the schema is happy with absence, the injector is happy with absence, and the prose
+  is prose. The single dissenting line was `os: OS` in the Props interface. Nothing could catch it until
+  a writeup actually omitted `os`, which took from 2026-07-20 to the first PicoCTF import, because until
+  then every writeup was a machine and every machine had one.
+- **Found by the build, not by review:** `Error: WriteupMeta: unknown os "undefined". Expected one of:
+  Linux, Windows.` This is the same failure mode the 2026-07-19 entry recorded for `difficulty`, and the
+  same property still holds and is worth restating: the component's runtime guard is the ONLY gate on an
+  absent axis, and it reports at render time with no source position. The taxonomy guard cannot help
+  (it stopped validating WriteupMeta props on 2026-07-20) and Zod cannot help (it agrees the field is
+  optional). A required prop whose schema says optional is invisible until content exercises it.
+- **No CSS change was needed, measured rather than assumed.** `.wm-nav` is a flex row with `gap: 8px` and
+  no `:has()`, sibling selector or count dependency, and `.writeup-meta`'s `gap: 16px` has no effect with
+  one child, exactly the argument the 2026-07-19 entry made for `.wm-diff`. Measured at 1280px, the
+  two-chip row is geometrically identical to Bandit's three-chip row on every axis but width: chip height
+  33.22px both, inter-chip gap 8.00px both, row flush to the `h1` left edge (delta 0.00) both, title to
+  row 73.00px both, row to body 33.59px both.
+- **Rejected:** writing `os: Linux` on `head-dump` (inventing metadata about a target the writeup never
+  touched, and the exact error the difficulty omission exists to prevent); adding an "N/A" or "Web" member
+  to the OS union (a chip that says nothing is worse than no chip, and it would pollute the future `/os`
+  route with a bucket that means "we did not know"); leaving `os` required and simply never importing web
+  challenges (six of the archive's twenty-two are Web Exploitation); making the injector substitute a
+  default (moves the invention one layer down and hides it better).
+- **Verified:** build green at 50 pages. `head-dump` renders exactly two chips, PicoCTF and Standalone,
+  with no OS chip and no empty gap. Regression checked on the two shapes that must not move: Bandit 0 to 1
+  still renders OverTheWire / Linux / Progressive, and Busqueda still renders HackTheBox / Linux /
+  Standalone plus its Difficulty chip and both FlagCapture controls. The other three PicoCTF pages, which
+  do declare `os`, still show their Linux chip.
+- **Status:** Adopted (working tree; NOT committed). Component + docs only: no CSS, no config, no new
+  deps, pinned versions unchanged. CORE_SPEC §6 and §7 updated in three places, including two claims that
+  the change falsified (`os` listed as always-declared, and the "other three props are required" line).
+
+---
+
+### 2026-09-03 · A component override in `astro.config.mjs` silently disables a Starlight plugin's override of the same component
+
+- **Context, not a supersession:** 2026-09-03 · The Principle coda keeps the pager, and `principle:` is
+  HackTheBox-only with a build guard introduced the `MarkdownContent` override this entry repairs.
+  Nothing in that entry is retired and it is not archived: the coda is still appended by an additive
+  override rendering `<Default><slot />{coda}</Default>`, still HackTheBox-only, still guarded. The only
+  thing that changes is which module `Default` resolves to, which that entry never states.
+- **Decision:** `src/components/overrides/MarkdownContent.astro` imports its `Default` from
+  `starlight-image-zoom/overrides/MarkdownContent.astro`, NOT from
+  `@astrojs/starlight/components/MarkdownContent.astro`. The plugin's override is itself
+  `<ImageZoom /><StarlightMarkdownContent><slot /></StarlightMarkdownContent>`, so chaining through it is
+  exactly Starlight's behaviour plus the zoom, and the coda still lands inside the real
+  `.sl-markdown-content`.
+- **The failure, and why it is silent.** `starlight-image-zoom` claims `MarkdownContent` DEFENSIVELY. Its
+  `config:setup` hook runs `if (!config.components?.MarkdownContent)` before assigning its own override,
+  so it yields to a user override rather than fighting it. Naming ANY `MarkdownContent` override in
+  `astro.config.mjs` therefore makes the plugin skip its own, with no warning, no error, and a green
+  build. Its `<ImageZoom />` element, which carries BOTH the zoom script and the zoom stylesheet, never
+  renders. Image zoom died on every writeup the moment the coda override landed, and was found the same
+  day while authoring the first PicoCTF page.
+- **Two symptoms, one cause,** which is the reason this is worth an entry rather than a commit message.
+  (1) No zoom anywhere, on all 13 content images. (2) The italic caption under every content image had a
+  clickable first character: with the plugin stylesheet absent, `.starlight-image-zoom-control` fell back
+  to `position: static` and laid out INLINE in the following text run, landing on the caption's opening
+  characters. Symptom 2 was reported as a caption bug and symptom 1 as a plugin bug; they are the same
+  defect, and chasing either one alone would have missed it.
+- **Why no build guard catches this,** and why one is not being written. A Starlight plugin's component
+  claims are internal to its `config:setup` hook, which receives the config and mutates it; nothing
+  exposes "the overrides this plugin WOULD have taken" for another pass to compare against. A guard would
+  have to hardcode each plugin's claim list and re-derive it on every upgrade, which is a second source
+  of truth for a two-plugin site. The mitigation is the standing rule below plus a comment at the import
+  in `MarkdownContent.astro` naming the trap, placed where the next person will be editing.
+- **Standing rule:** adding an entry to `components:` in `astro.config.mjs` requires checking every
+  Starlight plugin for a claim on that same component, and chaining through the plugin's override when
+  one exists. Today that is `starlight-image-zoom` and `MarkdownContent`. The check is per component, not
+  per plugin: `PageSidebar` and `Head` were both safe, which is why the collision went unnoticed for two
+  prior overrides.
+- **Rejected:** moving the coda back to a `Footer` seam to free the slot (that seam deleted the page's
+  pagination, which is the entire reason the coda moved to `MarkdownContent`); re-implementing
+  `<ImageZoom />` inside our override (forks plugin internals, drifts on upgrade, and is exactly the
+  "never rebuild a Starlight component" rule); dropping `starlight-image-zoom` (screenshots on writeups
+  want zoom, and the caption bug would survive anyway since it comes from the plugin's own stylesheet);
+  ordering `plugins` after `components` in the config (the guard is a value test, not an order test, so
+  it changes nothing).
+- **Verified:** build green at 47 pages. On `astro preview` at 1280px:
+  `customElements.get('starlight-image-zoom')` true and the control opens the dialog;
+  `.starlight-image-zoom-control` back to `position: absolute` inside the image (x 315, y 1539) with
+  caption overlap false, against x 296 / y 2060 overlapping a caption box starting x 296 / y 2045 before
+  the fix; Busqueda keeps its coda as the last child inside `.sl-markdown-content` with the pager
+  beneath, and all 7 of its images are zoomable; Bandit unaffected; console clean.
+- **Status:** Adopted + shipped.
+
+---
+
+### 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard
+- **Supersedes in part:** 2026-07-04 · Principle coda auto-appends from frontmatter; JetBrains Mono
+  italic loaded. Only the "Auto-append" bullet dies: the Footer seam, the pagination suppression ("the
+  silence"), and the hand-made `.sl-markdown-content` wrapper. The schema field, the italic face and
+  frontmatter-only authoring stand.
+- **Decision:** the coda is appended INSIDE the content wrapper by an additive
+  `src/components/overrides/MarkdownContent.astro` (`<Default><slot />{coda}</Default>`), and the Footer
+  override is deleted, so Starlight's default Prev/Next pagination renders beneath the coda on every
+  writeup. `principle:` is valid ONLY on `src/content/docs/hackthebox/<tier>/<slug>.mdx`, stays optional
+  there, and `plugins/remark-inject-writeupmeta.mjs` fails the build on one anywhere else or on an empty
+  value. The override's render test and the guard agree; the guard is the one that can fail loudly.
+- **Why the pager comes back:** the owner dislikes losing Prev/Next. The "nothing should render after the
+  coda" follow-up in 2026-07-04 · Principle: a closing epigraph component for writeups (centered italic
+  mono maxim) was an aesthetic default, not a constraint. The coda is content, so it closes the content;
+  the pager is chrome, so it stays last.
+- **Why HackTheBox only:** Bandit is a minigame, one command per level, and a coda there is noise. On a
+  progressive wargame the old seam would also have deleted the primary navigation.
+- **Why the guard lives in the injector:** Zod (`content.config.ts`) has no file path in scope, and the
+  taxonomy guard was scoped away from frontmatter (2026-07-20 · WriteupMeta is injected from frontmatter,
+  platform is derived from the directory). The injector already derives platform from the path and
+  already throws on a bad frontmatter value (`badges`), so it is the one pass that sees both. One place,
+  so writeup #51 costs one frontmatter line.
+- **Rejected:** a coda on Bandit or any non-HTB page; the pager above the coda; narrowing the render
+  test without a guard (silent ignore, the failure mode at scale); a separate plugin for one check;
+  making `principle:` required on HTB now (a three-line flip in the same guard, deferred until the mass
+  import has landed).
+- **Verified:** build green at 46 pages; three negative probes (Bandit level, HTB hub, empty value) each
+  fail with the guard's message naming the file; on `astro preview`, busqueda measures 57.59px above the
+  coda and 96px from coda to pager (6rem by construction: 1.5rem collapsed sibling margin, 3rem `.meta`,
+  1.5rem footer gap, the rhythm every Bandit page already has), identical at 375px with no overflow;
+  one `.sl-markdown-content` per page; Bandit keeps its pager with no coda; console clean.
+- **Status:** Adopted + shipped.
+
 ### 2026-08-29 · Astro 6 to 7 and Starlight 0.39 to 0.41, upgraded in phases against a byte-reproducible build
 - **Supersedes in part:** 2026-05-31 · Stay on current package versions (no upgrade). Only the "remain on
   Astro 6.3.3 / Starlight 0.39.2" half dies. That entry's actual POLICY, upgrade only from a stable
@@ -1381,6 +1525,9 @@
   when it is absent the Difficulty chip does not render at all. All 34 OverTheWire Bandit pages (33 level
   pages plus `bandit-finale.mdx`) drop their hand-authored `.machine-meta` badge row for
   `<WriteupMeta platform="OverTheWire" os="Linux" environment="Progressive" />`.
+  **Partly superseded by:** 2026-09-03 · WriteupMeta `os` becomes optional: a web challenge has no target
+  operating system. ONLY the words "the ONE optional prop" are stale: `os` became optional on the same
+  pattern, so there are now two. The rest of this bullet, and the rest of this entry, stand unchanged.
 - **Why optional, rather than picking a value:** the task was specced as a badge-row swap only, but the old
   Bandit row carries exactly two axes (platform + OS) while `WriteupMeta` required four. `Difficulty` is
   `Easy | Medium | Hard | Insane` with no honest "none" member, and a progressive wargame has no difficulty
@@ -2465,6 +2612,10 @@ ever wanted later, it would require adding static.cloudflareinsights.com to scri
   uses `entry.filePath` (under a platform dir, not an index page), robust across HTB tiers, VulnHub/Pico
   flat, and the OTW bandit hub. The coda is wrapped in a `.sl-markdown-content` element so the design's
   scoped `.sl-markdown-content .principle` CSS applies from the footer seam without touching custom.css.
+  - **Partly superseded by:** 2026-09-03 · The Principle coda keeps the pager, and `principle:` is
+    HackTheBox-only with a build guard. The Footer seam and the pagination silence are retired: the
+    coda now renders inside the content via a MarkdownContent override and the default footer
+    follows it.
 - **Italic:** the Google Fonts head link adds the JetBrains Mono `ital` axis (0/1, weights 400 and 500), so
   the italic maxim uses the true italic face, not a synthetic slant (JetBrains Mono is monospace, so the
   face is confirmed via document.fonts, not glyph width).

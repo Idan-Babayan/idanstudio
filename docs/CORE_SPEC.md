@@ -223,7 +223,7 @@ at build time, so CSS bytes vary by build machine.
 
 ```
 C:\dev\idanlab\                       # chosen to avoid Hebrew chars in the Windows user profile path
-├─ astro.config.mjs                   # Starlight config: site, sidebar, customCss[layers.css, fonts.css, then the eight theme modules tokens/base/prose/chrome/components/pages/utilities/overrides, in that order], EC themes + pluginPrivCommand, reading-progress head script (no font preloads, see DECISIONS 2026-07-07), image-zoom, vite alias, components overrides (PageSidebar + Footer + Head), markdown remarkPlugins (content-taxonomy validation guard + PasswordReveal import injection) + rehypePlugins (content image loading)
+├─ astro.config.mjs                   # Starlight config: site, sidebar, customCss[layers.css, fonts.css, then the eight theme modules tokens/base/prose/chrome/components/pages/utilities/overrides, in that order], EC themes + pluginPrivCommand, reading-progress head script (no font preloads, see DECISIONS 2026-07-07), image-zoom, vite alias, components overrides (PageSidebar + MarkdownContent + Head), markdown remarkPlugins (content-taxonomy validation guard + PasswordReveal import injection) + rehypePlugins (content image loading)
 ├─ src/
 │  ├─ content.config.ts               # docs collection (docsLoader + docsSchema) + the writeup metadata schema (§7)
 │  ├─ pages/
@@ -243,14 +243,14 @@ C:\dev\idanlab\                       # chosen to avoid Hebrew chars in the Wind
 │  │  ├─ ToggleAll.astro              # Expand/Collapse-all control (vanilla TS, scroll-anchored); injected via PageSidebar override
 │  │  ├─ AttackPath.astro             # guided infographic for a LINEAR priv-esc chain (ascending escalating path, SVG connectors, Next-step progression, one-time gold flourish); data-driven from a nodes[] prop, scoped styles, not-content. See DECISIONS 2026-07-19
 │  │  ├─ Callout.astro                # icon-based tagged callout (recon/loot/intel/vuln/defense); .cl styles in components.css
-│  │  ├─ Principle.astro              # closing epigraph (aside.principle, prop: text): centered italic mono maxim + dinkus + PRINCIPLE label; no card/border/bg; .principle styles in components.css
+│  │  ├─ Principle.astro              # closing epigraph (aside.principle, prop: text): centered italic mono maxim + dinkus + PRINCIPLE label; no card/border/bg; .principle styles in components.css; HackTheBox writeups only, appended from frontmatter by overrides/MarkdownContent.astro
 │  │  ├─ WriteupCard.astro            # presentational writeup card (props only, reusable for a future /writeups index)
 │  │  ├─ PlatformIndex.astro          # data + hero + difficulty filter + WriteupCard grid; ported homepage effects
 │  │  ├─ NotFound.astro               # 404 breadcrumb body (nudges to /robots.txt)
 │  │  ├─ SecretTerminal.astro         # from-scratch, zero-dependency vanilla-TS fake terminal
 │  │  └─ overrides/
 │  │     ├─ PageSidebar.astro         # additive Starlight override: renders <Default/> then <ToggleAll/> at the bottom of the right TOC
-│  │     ├─ Footer.astro              # additive Starlight override: auto-appends the <Principle> coda from frontmatter and suppresses pagination on writeups that carry one
+│  │     ├─ MarkdownContent.astro     # additive Starlight override: renders <Default/> with the <Principle> coda appended inside the content wrapper on HackTheBox writeups that set principle:; the default Footer and its pager follow unchanged
 │  │     └─ Head.astro                # additive Starlight override: renders <Default/> then appends only the social tags Starlight omits (author, og:image + secure_url/type/width/height/alt, twitter:title/description/image), per-page values read from frontmatter (see §2 "Social and SEO metadata")
 │  ├─ lib/
 │  │  └─ ec-priv-command.mjs          # EC plugin: tags command words by category (priv/recon/net/inspect)
@@ -522,11 +522,17 @@ token is an open ROADMAP item, not a bug.
   `<span>` today (the commented `<a>` + `data-astro-prefetch="false"` restore verbatim once the filter
   routes ship), `.not-content`; icons live in `badges/icons.ts` on a 14px grid; runtime-validates its
   union props. Colour model, icon sourcing, geometry and the light-mode AA palette are documented
-  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **`difficulty` is the one OPTIONAL prop**
-  (`difficulty?: Difficulty`): omit it and the Difficulty chip does not render at all, which is how a
-  progressive wargame with no difficulty rating (OverTheWire Bandit) is expressed. A difficulty that IS
-  supplied is still validated, so a typo still fails the build; it is never given a fallback. The other
-  three props are required. WriteupMeta is now the metadata row on EVERY writeup and has fully replaced
+  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **TWO props are OPTIONAL, `os` and `difficulty`**
+  (`os?: OS`, `difficulty?: Difficulty`), for the same reason: some content has no honest value on that
+  axis, and neither union carries a "not applicable" member, so the chip is omitted rather than invented.
+  Omit `difficulty` and no Difficulty chip renders, which is how a progressive wargame with no rating
+  (OverTheWire Bandit) is expressed. Omit `os` and no OS chip renders, which is how a web challenge with
+  no target operating system in evidence (PicoCTF `head-dump`) is expressed; that page ships a two-chip
+  row, Platform and Environment. A value that IS supplied is still validated on either axis, so
+  `difficulty="Hardd"` or `os="Linnux"` still fails the build, and neither is ever given a fallback.
+  `platform` and `environment` remain required. **`os` became optional 2026-09-03,** during the first
+  PicoCTF import: it had been required, so the "omit it where it does not apply" rule this spec already
+  described was not actually true until then, and the build is what caught it. WriteupMeta is now the metadata row on EVERY writeup and has fully replaced
   the hand-authored `.machine-meta` badge row, which no longer appears anywhere in `src/content/docs`.
   **It is INJECTED, never hand-placed (2026-07-20):** `plugins/remark-inject-writeupmeta.mjs` builds the
   element from frontmatter, so no writeup imports or writes the component. `platform` is supplied by the
@@ -540,14 +546,38 @@ token is an open ROADMAP item, not a bug.
 
 ### Starlight Component Overrides
 - **There are THREE, in `src/components/overrides/`:** `PageSidebar.astro` (renders the default "On
-  this page" TOC then appends `ToggleAll`), `Footer.astro` (appends the `Principle` coda from
-  frontmatter and suppresses pagination on writeups that carry one), and `Head.astro` (appends only
-  the Open Graph and Twitter Card tags Starlight omits, see §2 "Social and SEO metadata"). `Head`
-  arrived with the social-card work in 2026-08 and is the newest of the three.
+  this page" TOC then appends `ToggleAll`), `MarkdownContent.astro` (renders the default content
+  wrapper with the `Principle` coda appended inside it on HackTheBox writeups that set `principle:`;
+  the default Footer and its Prev/Next pager follow unchanged), and `Head.astro` (appends only the
+  Open Graph and Twitter Card tags Starlight omits, see §2 "Social and SEO metadata").
+  `MarkdownContent` replaced a `Footer` override on 2026-09-03 (that seam suppressed the pager beneath
+  the coda, see DECISIONS 2026-09-03) and is the newest of the three.
 - **Every override imports from the documented `@astrojs/starlight/components/*` entrypoints and
   none reaches into Starlight internals.** That is the constraint that keeps an override additive
   rather than a fork: a deep import into an internal path would bind to a private module that
   Starlight can move in a patch release, with no deprecation and no build error.
+  **ONE documented exception:** `MarkdownContent.astro` imports its `Default` from
+  `starlight-image-zoom/overrides/MarkdownContent.astro`. That is a plugin's PUBLISHED `overrides/`
+  path, not a Starlight internal, and the rule below is why it has to be.
+- **A user override SILENCES a plugin's override of the same component, and nothing warns.** A Starlight
+  plugin claims a component in its `config:setup` hook, and a well-behaved one yields to the site:
+  `starlight-image-zoom` runs `if (!config.components?.MarkdownContent)` before assigning its own. So
+  naming ANY `MarkdownContent` override in `astro.config.mjs` makes the plugin skip its override, with a
+  green build, no error and no message. Its `<ImageZoom />` element, which carries BOTH the zoom script
+  and the zoom stylesheet, then never renders, and image zoom dies on every writeup at once. Chaining
+  through the plugin's own override restores it and is exactly equivalent otherwise, because that file is
+  only `<ImageZoom /><StarlightMarkdownContent><slot /></StarlightMarkdownContent>`.
+  - **The tell is TWO symptoms, and neither names the cause.** Zoom stops working, AND the italic caption
+    under every content image gets a clickable first character: with the plugin stylesheet gone,
+    `.starlight-image-zoom-control` falls back to `position: static` and lays out inline in the following
+    text run, landing on the caption's opening characters. Chasing either symptom alone misses it.
+  - **Standing check: adding an entry to `components:` requires checking every Starlight plugin for a
+    claim on that same component,** and chaining through the plugin's override when one exists. The check
+    is PER COMPONENT, not per plugin: `PageSidebar` and `Head` are unclaimed, which is why the two earlier
+    overrides were safe and the third was not. No build guard is possible or planned, because a plugin's
+    claims live inside its own hook and nothing exposes the overrides it WOULD have taken.
+  - See DECISIONS 2026-09-03 · A component override in `astro.config.mjs` silently disables a Starlight
+    plugin's override of the same component.
 - Starlight Component Overrides: Additive Starlight component overrides are an approved architectural pattern alongside the `src/styles/` theme modules and custom components.
 - Override Strategy: Overrides should wrap and render `<Default />` (or the upstream component) and layer behavior, styling, or markup on top rather than copying or replacing upstream implementations.
 - No Forking by Default Forking, duplicating, or fully replacing Starlight components is discouraged and should only be considered when the desired result cannot be achieved through an additive override.
@@ -821,10 +851,14 @@ Preserves reading position: anchors on the current heading and corrects scroll s
    gap between a raw Notion export and the intended finished writeup is an editorial-judgment problem
    that no text-transformation script resolves: a script can normalize syntax, but it cannot make the
    editorial calls that define the site's writeup quality. Apply the MDX conventions below by hand.
-   - Place the file at `src/content/docs/{platform}/{difficulty}/{slug}.mdx`. The `{difficulty}` dir is
-     lowercase (`easy`/`medium`/`hard`/`misc`): the sidebar `autogenerate.directory` is case-sensitive
-     (e.g. `hackthebox/easy`) and must match the on-disk lowercase dir; a case-only rename needs
-     `git mv` on Windows (`core.ignorecase=true`).
+   - Place the file at `src/content/docs/{platform}/{middle}/{slug}.mdx`. The `{middle}` dir is
+     lowercase: the sidebar `autogenerate.directory` is case-sensitive (e.g. `hackthebox/easy`) and must
+     match the on-disk lowercase dir; a case-only rename needs `git mv` on Windows
+     (`core.ignorecase=true`). **What the middle tier MEANS is per platform**, and this is load bearing:
+     HackTheBox and VulnHub group by DIFFICULTY (`easy`/`medium`/`hard`/`misc`), OverTheWire by WARGAME
+     (`bandit`), PicoCTF by CATEGORY (`binary-exploitation`, and the other five below). `PlatformIndex`
+     currently assumes difficulty for all of them, which is why every PicoCTF card renders as `misc`
+     today; the fix is a committed ROADMAP item, not a defect in the content shape.
    - Copy + rename screenshots into `src/assets/{platform}/{difficulty}/{slug}/`, then reference them
      from the writeup by a relative Markdown path (`../../../../assets/...`) so astro:assets optimizes
      + hashes them.
@@ -842,7 +876,9 @@ removes. `gfm`, `smartypants` and `remarkRehype` are deliberately not passed: `u
 unset option back to the shared top-level value and all three already sit at their defaults.
 
 - **`remark-inject-writeupmeta.mjs`** injects the `<WriteupMeta />` row and its import. Gated on the
-  writeup path, so nothing outside one can be injected. Behavior detail in the MDX conventions below.
+  writeup path, so nothing outside one can be injected. It also FAILS the build on a `principle`
+  outside a HackTheBox writeup, or an empty one: it is the one pass that sees both path and
+  frontmatter, which Zod cannot. Behavior detail in the MDX conventions below.
 - **`remark-inject-passwordreveal.mjs`** injects the `PasswordReveal` import, only into files that use
   the tag and do not already import it.
 - **`remark-transform-recon-rail.mjs`** converts the recon findings list into the rail. It emits `dt`
@@ -875,8 +911,9 @@ underscore.
   change. Icons remain in public/icons; marketing images remain in public/images.
   Absolute /public image paths are not used for writeup content images.
 - Frontmatter `title`/`description` + `import Toggle from '@components/Toggle.astro'`.
-- **Metadata is FRONTMATTER ONLY.** Declare `os`, `environment` and (where the content has a rating)
-  `difficulty` in frontmatter, and write nothing in the body: the badge row and its import are injected by
+- **Metadata is FRONTMATTER ONLY.** Declare `environment`, plus `os` (where the challenge genuinely has a
+  target operating system) and `difficulty` (where the content has a rating), and write nothing in the
+  body: the badge row and its import are injected by
   `plugins/remark-inject-writeupmeta.mjs`. Never author a `<WriteupMeta />` tag or import it. `platform` is
   NOT a frontmatter field, it is derived from the writeup's directory. Omit `difficulty` for a progressive
   wargame (Bandit) and no chip renders. Set `badges: false` (unquoted boolean, never `no` or `off`) to opt a
@@ -886,16 +923,32 @@ underscore.
     files and are therefore exempt. A file outside a writeup path is never injected, even when it carries
     metadata frontmatter. The injector gates on this path test, which is why `platform` is derived from the
     directory rather than declared.
+- **Principle coda:** `principle: "..."` on HackTheBox writeups only, optional. Renders inside the content
+  as the last element, with the default Prev/Next pager beneath it. Anywhere else, or empty, the build
+  fails (`plugins/remark-inject-writeupmeta.mjs`). See DECISIONS 2026-09-03.
 - Long/indented code → wrapped in `<Toggle>`; all code blocks get `frame="code"` + a
   language `title` so bash and python look identical.
 - Notion `<aside>` → `:::tip[Answer]`. Task headings → brown `.task-title`.
-- **Flags:** emit the gold heading `### <span class="task-title">User Flag</span>` (or `Root Flag`)
-  immediately followed by `<FlagCapture type="user" flag="..." />` (or `type="root"`), and add
+- **Flags, MACHINES ONLY (HackTheBox and VulnHub):** emit the gold heading
+  `### <span class="task-title">User Flag</span>` (or `Root Flag`) immediately followed by
+  `<FlagCapture type="user" flag="..." />` (or `type="root"`), and add
   `import FlagCapture from '@components/FlagCapture.astro'`. This replaces the old heading + duplicate
   `<Toggle flag>` + `:::tip[Answer]`. Handle user-only and root-only writeups (emit only the flag that
   exists). See DECISIONS 2026-06-27.
-- **Wargame secrets:** emit `PasswordReveal` at the point in the walkthrough where the secret is obtained
-  (not frontmatter, not appended at the end). Pick the mode by the secret's SHAPE, never by preference:
+  **`FlagCapture` is RESERVED for those two platforms (2026-09-03, owner instruction).** A simple
+  challenge (OverTheWire Bandit, PicoCTF) uses `PasswordReveal` instead, per the bullet below. The split
+  is not password vs flag, it is CHALLENGE vs MACHINE: a Bandit level and a PicoCTF challenge are a few
+  commands and a string, while a box is a trophy that earns the gold decode ceremony. Do not reach for
+  `FlagCapture` on a new platform without deciding which side of that line it sits on.
+- **Challenge secrets (`PasswordReveal`), on OverTheWire and PicoCTF:** emit it at the point in the
+  walkthrough where the secret is obtained (not frontmatter, not appended at the end), with NO heading
+  above it, directly under the code block whose output is masked (`<password>` on Bandit, `<flag>` on
+  PicoCTF). The `term` prop names the secret: it defaults to `"Password"`, so every Bandit page is
+  unchanged, and PicoCTF passes `<PasswordReveal term="Flag" password="picoCTF{...}" />` to render the
+  label FLAG and announce "Flag revealed" / "Flag copied". `term` changes the NOUN only: the amber
+  identity, the blur and the absence of the decode scramble all stay, because they now mark
+  challenge-vs-machine rather than password-vs-flag (see the flags bullet above).
+  Pick the mode by the secret's SHAPE, never by preference:
   - one-line password → `<PasswordReveal password="..." />` (inline: blurs in place, copyable).
   - multi-line secret, e.g. an RSA private key → `<PasswordReveal label="Reveal private key">` wrapping a
     fenced block, then `</PasswordReveal>` (block: collapses). Truncate the key first (see the
@@ -926,6 +979,170 @@ underscore.
 - Bold inside code fences is impossible (markdown); to emphasize a code line, manually
   use expressive-code line highlighting, e.g. ` ```bash {3} `.
 
+### PicoCTF writeup template (adapted from Bandit, 2026-09-03)
+
+**A PicoCTF challenge is structurally a Bandit level, not a machine:** a few commands and a string. So it
+inherits the Bandit skeleton rather than the HackTheBox long form, and the governing rule is RESTRAINT.
+The failure mode here is over-explanation, not under-explanation: a page whose "Why it works" is longer
+than the challenge is worse than one without it. Reference file:
+`src/content/docs/picoctf/binary-exploitation/pie-time.mdx`.
+
+- **Route:** `picoctf/<category>/<challenge-slug>.mdx`. The middle tier is the official picoCTF CATEGORY,
+  and there are exactly SIX: `general-skills`, `cryptography`, `web-exploitation`, `forensics`,
+  `reverse-engineering`, `binary-exploitation`. Assets mirror at
+  `src/assets/picoctf/<category>/<slug>/`, four `../` from the writeup.
+- **Sidebar:** each category is a NAMED collapsed group in `astro.config.mjs`, never an autogenerate over
+  the whole platform. Two reasons, both observed: an autogenerated group is labelled with the raw
+  lowercase directory name (`binary-exploitation`, not `Binary Exploitation`), and the platform's own
+  `index.mdx` is then picked up as a second nested entry with the same name as its parent group. There is
+  no index page per category; the toggle IS the tier. Groups stay COMMENTED until their directory holds a
+  writeup, because a missing `autogenerate.directory` fails the build (same reason as HTB Hard).
+  Within a category, autogenerate's alphabetical order stands and no page carries a `sidebar.order`:
+  these challenges are standalone, not sequential.
+- **Frontmatter:** `title`, `description`, `environment: Standalone`, and `os` ONLY where the challenge
+  genuinely involves one. **NO `difficulty`,** deliberately: picoCTF scores in points, which run from 1
+  (DISKO 1) to 200 (EVEN RSA), are set per edition, and span 2019 to 2025, so a 50-point 2021 challenge
+  and a 50-point 2025 one are not comparable and no honest mapping onto Easy through Insane exists. The
+  chip simply does not render, exactly as on Bandit. **NO `principle`:** it is HackTheBox-only and the
+  build fails on one here (`plugins/remark-inject-writeupmeta.mjs`).
+- **Skeleton**, in this order and with nothing else:
+  1. `> Goal: ...` blockquote, one or two sentences. Name what the artefacts ARE (a function, a file, a
+     service), since the reader has not seen the challenge.
+  2. `## Approach`, opening with PROSE, never with a subheading. Fences and prose alternate.
+  3. `<PasswordReveal term="Flag" password="picoCTF{...}" />`, with NO heading above it, directly under
+     the fence whose flag output is masked as `<flag>`. **Where the recorded route produced no maskable
+     fence, it follows the prose (or an image caption) instead.** That is not a rare exception: six of
+     the twenty-one PicoCTF pages sit this way, plus two Bandit pages. `ph4nt0m-1ntrud3r`'s solve IS the
+     flag arriving in seven readable slices, so any fence showing the intermediate values would print the
+     answer in full and defeat the masking; `red` decoded in CyberChef, `get-ahead` read the flag from a
+     Burp response header, `scan-surprise` uploaded to a browser decoder, `cookie-monster-secret-recipe`
+     read the value out of a browser extension and decoded it there, and `insp3ct0r` assembles it
+     from three fences none of which can be masked alone. Masking wins over the layout convention.
+     A third shape exists and is fine: `stonks` sits under the `unscramble.py` SOURCE fence, because the
+     script it shows is what produces the flag and no run of it was recorded.
+     **Do not invent a terminal transcript to have something to mask**, and do not reconstruct payloads
+     that were never recorded. Read that prohibition first: this bullet used to name only `ph4nt0m`, and
+     a page whose solve happened in a browser then reads as a violation, which invites exactly the
+     fabricated `zbarimg` capture the rule forbids.
+  4. `## Why it works`, one or two paragraphs. One idea, not a lecture. The measured corpus norm is five
+     to seven sentences and roughly 100 to 190 words (nineteen pages, 2026-09-04; `pie-time` 5/102,
+     `ph4nt0m` 4/126, `stonks` 8/183). The earlier "two to four sentences" was never true of any page but
+     one and condemned the reference page, so it was fired at spuriously in review; the number is
+     descriptive, and one idea carried well is still the actual test.
+- **How it degrades and stretches.** A two-command challenge is two fences and three sentences; that is
+  the whole page and it is finished. A long one adds FENCES, not sections, and puts any log dump behind a
+  `<Toggle>` so the visible fence stays short. **Subheadings:** zero is normal. One `###` inside
+  `## Approach` is fine where the challenge genuinely pivots (local measurement, then the live instance),
+  but only AFTER prose has followed the `##`, never immediately under it, which makes the `##` read as
+  decoration. Three further tests, all from the 2026-09-04 audit that added the second and third `###`
+  in the corpus (`stonks`, `ph4nt0m-1ntrud3r`) and rejected the other thirteen pages:
+  - **LENGTH AND FLATNESS ARE NOT THE CRITERION, and reaching for them is the standard error.** `pie-time`
+    has one of the FLATTEST Approach sections in the set and is the reference page. Measured longest
+    unbroken prose runs: ph4nt0m 248, ssti1 173, hashcrack 172, stonks 170, get-ahead 148, so no
+    threshold separates the pages that earned one from the pages that did not. A genuine pivot does.
+  - **The backward-reference test, which is mechanical and decides most cases.** A `###` must not land
+    directly above a sentence that reaches back across it. Every rejected candidate failed exactly here
+    (`Two is the only even prime` answering the paragraph before it on even-rsa; `Send them to Repeater`
+    on get-ahead), and both accepted pages needed a one-clause prose fix to pass it (`Converted back to
+    bytes it is` became `the leak is`; `Sorted that way` became `Sorted by time`). If the seam cannot be
+    made to pass without rewriting real content, the page does not want a heading.
+  - **Depth: a `###` is a CODA, not a chapter break.** `pie-time`'s sits about 85% into its Approach and
+    `stonks`' about two thirds in. One placed 15% in turns the `##` into a one-paragraph preamble, which
+    is the same defect as placing it immediately under the `##` and is why `ssti1` was rejected despite
+    carrying the most prose of any page.
+  - **Sentence case, deliberately.** All three PicoCTF `###` are sentence case; all seventeen in the
+    HackTheBox corpus are Title Case. Do not "normalise" the PicoCTF ones for consistency.
+  A `###` also earns a nested `--depth: 1` row in both the desktop and mobile table of contents (cyan,
+  per `chrome.css`), so it is a navigational object and not only a visual break. An image or a changed
+  fence title is neither, and neither substitutes for one.
+  **Callouts are available and the default is none.** A PicoCTF page carrying three of them
+  is over-explained; Bandit carries zero.
+- **Line highlighting is a SELECTION, and a selection needs a field.** A tint answers exactly one
+  question, *which line?*, so it earns its place only where that question is live, and it must land on the
+  line the surrounding prose actually uses. Three tests, all required (derived 2026-09-04 from a census of
+  all 41 highlighted fences in the repo, after the owner rejected four newly authored ones):
+  1. **More than one candidate exists.** A fence whose rows are all the same kind of thing (three setup
+     commands, a two-line excerpt, a session whose whole progression is the content) has no minority to
+     select and takes NONE. This is why all 37 Bandit fences and `scan-surprise` carry no highlighting,
+     and that is correct rather than an omission.
+  2. **The fence's own structure has not already answered it.** A shell prompt (`└─>`, `$`, `(gdb)`) is
+     itself a selector, so where a fence holds ONE command that command is already picked out and tinting
+     it says nothing the fence did not. The program chatter around it is noise the reader is skipping, not
+     a field of candidates. A command becomes markable only once the prompt has stopped selecting, which
+     is to say when several are typed and only some do the work (`forest` marks 1 of 7, and `pie-time`'s
+     `gdb` fence 2 of 3 for the ceremony reason below). Re-check these two examples before citing them:
+     the three that stood here until 2026-09-05 (`even-rsa`, `disko-1`, `busqueda`) were all wrong within
+     a day, two because the tints they named were removed by this very rule and one because it was
+     misread as a command when it marks `nmap` output.
+  3. **The mark lands on what the prose consumes.** In a fence carrying commands AND output that is
+     almost always the OUTPUT: the value, the grant, the line the next paragraph works on. `busqueda` and
+     `n0s4n1ty-1` both mark `(ALL) NOPASSWD: ALL` rather than the `sudo -l` that produced it; `red` marks
+     two `exiftool` fields rather than `exiftool`; `verify` marks the matched digest rather than the
+     `sha256sum` that found it. Marking the command instead is the standard way this test fails, and it
+     is invisible while writing because the command is what you were thinking about. Never a
+     banner, never a heading line inside program output, never a masked `<flag>` (the `PasswordReveal`
+     beneath it already does that job), never a log dump, never a whole session.
+
+  **Marking 100% of a category selects nothing**, and is the same defect as marking a lone command.
+  The reference page is the model on both counts: `pie-time` leaves its solitary
+  `nc rescued-float.picoctf.net 55551` bare and marks the leaked address and the address typed back.
+
+  Four qualifiers, all added 2026-09-04 by owner ruling on specific fences:
+  - **CEREMONY IS NOT A CANDIDATE.** A command every session of its kind opens with does no work and
+    does not count toward the field. `pie-time`'s `gdb` fence marks 2 of its 3 commands and leaves `r`
+    bare, because `r` is how every `gdb` session starts. Excluding it is what makes the other two a
+    selection rather than the whole set.
+  - **BURIAL IS THE TEST, NOT LENGTH.** Mark only where the target sits inside material the eye skims.
+    `n0s4n1ty-1`'s `(ALL) NOPASSWD: ALL` is the last row under four lines of `sudo` boilerplate, so it
+    is buried and earns `{7}`. `stonks`' decode fence is two prompts, two commands and one result: the
+    result is the only row that is neither, it is last, and the reader takes the whole fence in at once.
+    Nothing is buried, so nothing is marked, even though a payoff line exists.
+  - **A DUMP TAKES NOTHING.** Material offered for completeness rather than as a step (`pie-time`'s full
+    disassembly, `stonks`' 817 hex digits, both behind a `<Toggle>`) carries no highlighting at all: it
+    is there for whoever wants it, and directing attention inside it contradicts the reason it was
+    collapsed. This is about dumps, NOT about `<Toggle>`: 22 of the 36 HackTheBox fences inside a toggle
+    ARE highlighted, because those collapse a recon STEP whose payoff is the point of opening it.
+  - **DO NOT TINT WHAT THE GRAMMAR RENDERS INERT.** A tint on a line Expressive Code has coloured as a
+    comment says "look here" and "this is switched off" in the same glyphs. `rust-fixme-3` briefly
+    marked the two commented-out braces that are the whole bug, and dropped it: they are the first and
+    last rows of the fence, and the sentence directly above names them, so position and prose were
+    already pointing and only the tint was fighting the syntax colours.
+
+  Highlighting is per fence, so re-count the line numbers after any edit: a stale `{3,7}` silently marks
+  the wrong rows and still builds.
+- **A fence is titled by WHERE IT STARTS.** A fence opening on the local machine (the `Idan@Kali` prompt)
+  is `Bash`, even when an `ssh` typed inside it continues on a remote host; a fence opening on a remote
+  prompt is `SSH`. Bandit titles each fence with the level prompt (`bandit12@bandit`) because the level
+  number is real information in a 34-step progression, and that does NOT transfer here: PicoCTF
+  challenges are standalone, so a prompt-shaped title would carry nothing. Where the commands were not
+  typed into a shell at all the title names the surface that took them: `Web shell` on `n0s4n1ty-1`,
+  where each line went into a browser text box and reached the host through PHP's `system`. A file
+  authored rather than executed is titled with its FILENAME (`RSA_decrypt.py`, `shell.php`), which also
+  answers the question a bare `php` or `python` title leaves open, namely what to save it as.
+- **NEVER write that a flag tail is "minted per instance" without evidence for THAT challenge.** The
+  phrase sat on five pages and was wrong or unsupported on every one (audit 2026-09-06, five corrected:
+  `webdecode`, `verify`, `ph4nt0m-1ntrud3r`, `insp3ct0r`, `even-rsa`). There is no platform default,
+  because picoCTF does something different per challenge. Each entry below states what was MEASURED, not
+  a mechanism inferred from it, and says how thin the sample is:
+  - `webdecode`: one relaunch returned the flag byte-identical, tail included. Two observations.
+  - `even-rsa`: two connections returned the same flag while `N` and the ciphertext differed both times,
+    because `gen_key` runs at connection time. Two observations. Other solvers do publish other tails.
+  - `super-ssh`: one relaunch rotated the port and returned the same host key and the same flag. Two.
+  - `insp3ct0r`: a picoGym launch returned `302945a7` against the recorded `832b0699`, from a different
+    host, so on this one the tail does track the deployment.
+  - `verify`: five unrelated solvers landed on one tail and three of those print an identical
+    `checksum.txt`, so the directory is prebuilt and reissued rather than generated.
+  - `scan-surprise`: the tail follows the artefact index in `c_atlas/N`; four indices were decoded from
+    the QR pixels and gave four tails.
+  - `get-ahead`: port to tail is one to one across ten public records spanning 2021 to 2024.
+  Write only what is observed, and prefer "belongs to the deployment" or "varies from copy to copy" over
+  any claim about HOW the value is generated. **A tail seen twice is evidence of a fixed flag, never
+  proof**, because prebuilt variant pools exist (`disko-1` documents three images differing only in the
+  tail). Equally, do not append a consequence the evidence does not carry: "so a reader gets a different
+  tail" is TRUE on `insp3ct0r` and FALSE on `webdecode`, so it is checked per challenge, never assumed.
+- **Images:** the site-wide rule applies, alt text for screen readers PLUS a separate italic caption on
+  the following line. Prefer one image that carries the technique over several that narrate it.
+
 ### Badge / tag system (canonical colors in `components.css`)
 - Platform (badges): htb lime, vulnhub red, picoctf purple, overthewire amber (each with a
   leading glow dot; canonical palette, see §6).
@@ -945,9 +1162,11 @@ underscore.
   `dist`: `meta-badge` 6, `difficulty-*` 3, `os-*` 3, `machine-meta` 0. See DECISIONS 2026-07-19.
 - **Frontmatter metadata (updated 2026-07-20):** `content.config.ts` extends `docsSchema` with strict
   optional enums for `os` (`Linux | Windows`), `environment` and `difficulty`, plus an optional `badges`
-  boolean, `tags`, and `principle`. Since the injection migration EVERY writeup sets `os` and
-  `environment` in frontmatter, so `WriteupCard`'s OS chip now has a value on every writeup it renders
-  (it still only maps linux/windows, which is exactly what the enum permits). `tags` stays deliberately
+  boolean, `tags`, and `principle` (HackTheBox-only, guarded at the remark stage; see §7). Since the
+  injection migration every writeup sets `environment`, and every writeup with a target operating system
+  sets `os`, so `WriteupCard`'s OS chip has a value wherever one exists and self-hides where one does not
+  (it still only maps linux/windows, which is exactly what the enum permits; `head-dump` is the first
+  writeup to omit `os`, see the WriteupMeta entry in §6). `tags` stays deliberately
   unused until writeup volume makes a tag filter earn its place (see ROADMAP).
 
 ### Badge system (WriteupMeta): icon sourcing, geometry, a11y
@@ -1192,3 +1411,5 @@ whole records.
 - Cherry-picking the CSS refactor to `main` ahead of the retune: rejected. See DECISIONS 2026-07-27 · The release hold is lifted and `dev` ships to production.
 - Solving the platform eyebrow inks without moving the hero wash: rejected. See DECISIONS 2026-07-31 · The platform ink family, and the wash that was causing the failure it hid.
 - Dimming the platform hero wash for contrast: rejected, no alpha reaches AA. See DECISIONS 2026-07-31 · The platform ink family, and the wash that was causing the failure it hid.
+- A Principle coda on Bandit, or on any page outside hackthebox/: rejected. See DECISIONS 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard.
+- Suppressing the Prev/Next pager beneath the Principle coda ("the silence"): rejected. See DECISIONS 2026-09-03 · The Principle coda keeps the pager, and `principle:` is HackTheBox-only with a build guard.

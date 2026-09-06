@@ -27,10 +27,12 @@ export const collections = {
 				badges: z.boolean().optional(),
 				// Deliberately unused until writeup volume makes a tag filter earn its place (ROADMAP).
 				tags: z.array(z.string()).optional(),
-				// Optional closing maxim. When a writeup sets this, the Footer override
-				// auto-appends the design's <Principle> coda and suppresses pagination on
-				// that page (the silence is coupled to the coda). Omitted means no coda,
-				// exactly as os/tags omit their chips. See src/components/overrides/Footer.astro.
+				// Optional closing maxim, HackTheBox writeups ONLY. When set, the MarkdownContent
+				// override appends the design's <Principle> coda inside the content, and the default
+				// Prev/Next pager renders beneath it. Omitted means no coda, exactly as os/tags omit
+				// their chips. Zod cannot see the file path, so the scope rule lives in
+				// plugins/remark-inject-writeupmeta.mjs, which fails the build on a principle outside
+				// hackthebox/ or on an empty one. See src/components/overrides/MarkdownContent.astro.
 				principle: z.string().optional(),
 			}),
 		}),

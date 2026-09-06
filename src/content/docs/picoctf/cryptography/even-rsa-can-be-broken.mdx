@@ -1,0 +1,62 @@
+---
+title: "EVEN RSA CAN BE BROKEN???"
+description: "PicoCTF EVEN RSA CAN BE BROKEN: the service rolls a fresh RSA key on every connection, and every modulus it hands out is even, which gives the factorisation away on sight."
+environment: Standalone
+---
+
+> Goal: a service prints an RSA public key and the flag encrypted under it, then rolls a fresh key for the next connection. Recover the plaintext from the public half alone.
+
+## Approach
+
+The challenge ships `encrypt.py`, and reading it first is the right instinct even though the bug is not in it. What it shows is textbook RSA: `e` is 65537, `gen_key(1024)` asks for a 1024 bit modulus, and the flag is encrypted with a plain `pow(m, e, N)`. The prime generator it leans on, `get_primes`, is imported from a `setup` module that picoCTF never published, so the half of the program that could be wrong is the half you cannot read. Whatever the flaw is, it has to be found in the output.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/968ace6e870166b1d910d69fe174b6ce7de6ece89448ab5d693a19c052b3d2b4/encrypt.py
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> nc verbal-sleep.picoctf.net <port number>
+```
+
+The service prints three labelled lines, the modulus `N`, the public exponent `e` and the ciphertext, and reconnecting hands out a completely different `N`. Every one of them is even.
+
+Two is the only even prime, so if `N` is a product of two primes then one of them is 2 and the other is `N / 2`. That second factor is worth checking rather than assuming, because the generator has already demonstrated it will return something other than the 512 bit prime it was asked for. It comes back prime, so the factorisation is complete and the private exponent falls out of it.
+
+```python frame="code" title="RSA_decrypt.py" {6,7}
+from Crypto.Util.number import bytes_to_long, long_to_bytes
+from sympy import mod_inverse
+Cipher = 8504643018953947845360733962471598034484334592811657716303026089789147652901594543036369758890069547420623842706506892876116699360546016781862345514805913
+E = 65537
+N = 16756380023122691395236265679043126408267507599922063465553015494252919328619142764199498632628382256808554749934760583015436562796840106184762104828077722
+P = 2
+Q = N // P
+D = mod_inverse(E, (P-1)*(Q-1))
+decrypt = pow(Cipher, D, N)
+message = long_to_bytes(decrypt).decode()
+print(message)
+```
+
+Only `E` is durable. `N` and `Cipher` above are one connection's, and the failure mode if you forget that is unusually quiet: substituting one of the two raises a decoding error, which is the lucky case, while substituting neither runs cleanly and prints somebody else's flag.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> python3 -m venv venv
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> source venv/bin/activate
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> pip install pycryptodome
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> pip install sympy
+┌──(Idan@Kali)-[~/EVEN_RSA]
+└─> venv/bin/python RSA_decrypt.py
+<flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{tw0_1$_pr!m37dbe6984}" />
+
+Everyone lands on the same joke and a different tail, but the tail is not something a relaunch changes: two fresh instances handed back this same `7dbe6984`. What does change every time is the challenge's side of it, because `gen_key` runs on connection, so each session mints new primes and hands over a different `N` and a different ciphertext for the one flag sitting in `flag.txt`.
+
+## Why it works
+
+RSA rests on nobody being able to split `N`. Here the split is free, and what it buys is the totient: `(p-1)(q-1)` normally hides behind two unknown 512 bit primes, but with `p` equal to 2 it collapses to `q - 1`, a number anyone holding `N` can compute by dividing. The private exponent is then just the inverse of `e` against that, and there is nothing left of the scheme to attack.
+
+The key size is the tell that something failed upstream rather than in the arithmetic. `gen_key(1024)` asks for two 512 bit primes. Substituting 2 for one of them leaves a 513 bit modulus, half the bit length the key advertises, before anyone has factored anything. picoCTF's first hint asks how much you trust randomness, which is exactly the right place to point: every line of `encrypt.py` is correct, and the one thing it delegates returned a constant where it promised a random prime.

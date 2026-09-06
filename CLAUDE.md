@@ -102,7 +102,7 @@ Full description in CORE_SPEC §5. What a session must not get wrong:
 
 Flat `.mdx` at `src/content/docs/<platform>/<difficulty>/<slug>.mdx`. Reference file: `busqueda.mdx`. Full conventions in CORE_SPEC §7. The rules that break the build or the page if missed:
 
-- **Metadata is FRONTMATTER ONLY.** Set `os`, `environment`, and `difficulty`. The `WriteupMeta` badge row is INJECTED by `plugins/remark-inject-writeupmeta.mjs`: never import it, never write the tag. `platform` is NOT a frontmatter field, it is derived from the directory, so it cannot be mistyped. Values are strict enums in `src/content.config.ts`, so casing matters. Omit `difficulty` for progressive wargames (Bandit). `badges: false` (unquoted boolean, never `no` or `off`) opts a page out.
+- **Metadata is FRONTMATTER ONLY.** Set `os`, `environment`, and `difficulty`. The `WriteupMeta` badge row is INJECTED by `plugins/remark-inject-writeupmeta.mjs`: never import it, never write the tag. `platform` is NOT a frontmatter field, it is derived from the directory, so it cannot be mistyped. Values are strict enums in `src/content.config.ts`, so casing matters. Omit `difficulty` for progressive wargames (Bandit). `badges: false` (unquoted boolean, never `no` or `off`) opts a page out. `principle:` (the closing coda) is HackTheBox-only and optional; anywhere else the build fails.
 - **The recon findings rail is a PLAIN MARKDOWN LIST** inside `<Callout type="recon">`. No component, no import, no markup:
 
   ```mdx

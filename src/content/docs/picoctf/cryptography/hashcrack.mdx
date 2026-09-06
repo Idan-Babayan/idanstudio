@@ -1,0 +1,43 @@
+---
+title: hashcrack
+description: "PicoCTF hashcrack: three hashes handed over in sequence with the algorithm withheld until after each answer, and three passwords that were in the lookup table long before anyone tried."
+environment: Standalone
+---
+
+> Goal: a service prints a hash and waits for the password that produced it, then does the same twice more. Nothing says which algorithm made a hash until after you have cracked it.
+
+## Approach
+
+Connect and the pattern is immediately clear: a bare hex string, a prompt, and nothing else to work with. A correct password advances to the next stage and the next hash.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/hashcrack]
+└─> nc verbal-sleep.picoctf.net <port number>
+```
+
+The algorithm is the thing being withheld. Each stage names it only in the line it prints *after* a correct answer, which is too late to be of any use, so the only clue available in advance is the width of the digest: 32 hex characters, then 40, then 64, which is 128, 160 and 256 bits.
+
+Width narrows the field without settling it. A 128 bit digest is equally consistent with MD4, MD2, NTLM and RIPEMD-128. At 160 bits, RIPEMD-160 fits as readily as SHA-1. At 256, SHA3-256 and BLAKE2s-256 both do.
+
+In the event the identification never had to happen at all. CrackStation takes a bare hash with no algorithm selector, searching every table it holds and reporting whichever one matched, so all three stages came back on a paste.
+
+```text frame="code" title="The three stages"
+482c811da5d5b4bc6d497ffa98491e38                                  password123
+b7a875fc1ea228b9061041b7cec4bd3c52ab3ce3                          letmein
+916e8c4f79b25028c9e467f1eb8eee6d6bbdff965f9928310ad30a8d88697745  qwerty098
+```
+
+```text frame="code" title="After the third password"
+Correct! You've cracked the SHA-256 hash with a secret found.
+The flag is: <flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{UseStr0nG_h@shEs_&PaSswDs!_70ffa57c}" />
+
+The wording is constant across every recorded solve and the last eight characters are not, so the value to submit is whatever your own session prints.
+
+## Why it works
+
+MD5 and SHA-1 are both broken for collisions, which is not what a lookup table exploits, and nothing here is cryptanalysis. Both properties that matter are properties of the deployment: the digests are unsalted, so a single precomputed table serves every target that ever used them, and the three passwords were already sitting in that table. The guess about which algorithm made each one is checkable after the fact and holds, since `md5` of `password123`, `sha1` of `letmein` and `sha256` of `qwerty098` reproduce the three digests exactly.
+
+Stage three is the interesting one. SHA-256 is not weak and it is genuinely more expensive per candidate than MD5, yet it falls just as easily, because cost per guess only begins to matter once the answer is not already in the list. That is why the remedy is a per-password salt, which makes one table useless against a second target, and a deliberately slow function such as bcrypt, scrypt or Argon2, which makes the list expensive to walk. A stronger hash on its own buys nothing, which is what the flag says out loud.

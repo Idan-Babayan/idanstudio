@@ -6,11 +6,16 @@ import {
 
 interface Props {
   platform: Platform;
-  os: OS;
+  // OPTIONAL since 2026-09-03, for the same reason difficulty is: some content has no honest value on
+  // this axis. A PicoCTF web challenge is a URL and a browser; there is no target operating system in
+  // evidence, and Linux|Windows has no "not applicable" member. Omit it and the OS chip does not
+  // render. Never guess one: an invented OS is exactly what the omission exists to prevent, and the
+  // injector already forwards the field only when frontmatter holds a non-empty string.
+  os?: OS;
   environment: Environment;
-  // OPTIONAL, and the only optional axis. A progressive wargame (OverTheWire Bandit) carries no
-  // difficulty rating, and the union has no honest "none" member, so the axis is omitted rather than
-  // invented. Omit it and the Difficulty chip does not render at all; supply it and nothing changes.
+  // OPTIONAL. A progressive wargame (OverTheWire Bandit) carries no difficulty rating, and the union
+  // has no honest "none" member, so the axis is omitted rather than invented. Omit it and the
+  // Difficulty chip does not render at all; supply it and nothing changes.
   difficulty?: Difficulty;
 }
 const { platform, os, environment, difficulty } = Astro.props;
@@ -28,13 +33,14 @@ const platformClass: Record<Platform, string> = {
 // is checked against the union of its registries. This replaces the previous per-axis check plus a
 // bespoke OS block: without it, platform="HackTheBox" would now throw, because HackTheBox has moved
 // out of platformLogos and into platformIcons.
-// `difficulty` joins the list only when it is supplied, because it is optional (see Props): an absent
-// value is a deliberate omission, while a value that IS present is still checked, so difficulty="Hardd"
-// fails the build exactly as before. Never give it a fallback; inventing a rating for content that has
-// none is the precise thing the omission exists to prevent.
+// `os` and `difficulty` join the list only when they are supplied, because both are optional (see
+// Props): an absent value is a deliberate omission, while a value that IS present is still checked, so
+// difficulty="Hardd" or os="Linnux" fails the build exactly as before. Never give either a fallback;
+// inventing a rating or an operating system for content that has none is the precise thing the
+// omission exists to prevent.
 const axes: ReadonlyArray<readonly [string, string, readonly object[]]> = [
   ['platform', platform, [platformLogos, platformIcons]],
-  ['os', os, [osLogos, osIcons]],
+  ...(os === undefined ? [] : [['os', os, [osLogos, osIcons]] as const]),
   ['environment', environment, [environmentIcons]],
   ...(difficulty === undefined ? [] : [['difficulty', difficulty, [difficultyLevel]] as const]),
 ];
@@ -46,7 +52,7 @@ for (const [name, value, registries] of axes) {
 }
 
 const level = difficulty === undefined ? undefined : difficultyLevel[difficulty];
-const osSlug = os.toLowerCase();
+const osSlug = os === undefined ? undefined : os.toLowerCase();
 const envSlug = environment.toLowerCase().replace(/\s+/g, '-');
 // Per-value classes so CSS can color each chip (the slugs double as the class suffixes):
 const osClass = `wm-os-${osSlug}`;    // wm-os-linux | wm-os-windows
@@ -92,11 +98,13 @@ const envClass = `wm-env-${envSlug}`; // wm-env-standalone | wm-env-active-direc
         ? <span class="wm-ico" set:html={platformIcons.HackTheBox} />
         : <img class="wm-ico wm-ico-logo" src={platformLogos[platform]} alt="" width="15" height="15" loading="lazy" decoding="async" />}{platform}
     </span>
-    <span class={`wm-chip ${osClass}`}>
-      {os === 'Linux'
-        ? <img class="wm-ico wm-ico-logo" src={osLogos.Linux} alt="" width="15" height="15" loading="lazy" decoding="async" />
-        : <span class="wm-ico" set:html={osIcons.Windows} />}{os}
-    </span>
+    {os !== undefined && (
+      <span class={`wm-chip ${osClass}`}>
+        {os === 'Linux'
+          ? <img class="wm-ico wm-ico-logo" src={osLogos.Linux} alt="" width="15" height="15" loading="lazy" decoding="async" />
+          : <span class="wm-ico" set:html={osIcons.Windows} />}{os}
+      </span>
+    )}
     <span class={`wm-chip ${envClass}`}>
       <span class="wm-ico wm-ico-env" set:html={environmentIcons[environment]} />{environment}
     </span>

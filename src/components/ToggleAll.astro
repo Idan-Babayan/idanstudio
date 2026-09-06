@@ -163,7 +163,7 @@
     font-size: 0.78rem;
     line-height: 1;
     /* Focus ring: route through the site's --focus-ring token (see the focus-ring system block at the top
-       of custom.css) instead of drawing a local outline, so the shared zero-specificity
+       of tokens.css; the rule itself is in base.css) instead of drawing a local outline, so the shared zero-specificity
        :where(...button...):focus-visible rule paints it at the standard 2px / 2px offset. The control's
        identity IS this cyan (its hover color, border and wash all read --pf-accent-2), so the ring echoes
        what it already expresses. --pf-accent-2 is ALREADY theme-aware (:root maps it to --tp-cyan, the

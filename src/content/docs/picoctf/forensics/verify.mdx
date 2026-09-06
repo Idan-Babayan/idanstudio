@@ -1,0 +1,43 @@
+---
+title: Verify
+description: "PicoCTF Verify: one SHA-256 digest against a directory of anonymous files, and the gap between checking a file's integrity and knowing where it came from."
+os: Linux
+environment: Standalone
+---
+
+> Goal: the box hands you a single SHA-256 digest, a directory of files with anonymous names, and a script that decrypts the right one. Work out which file the digest describes.
+
+## Approach
+
+Log in over SSH as `ctf-player` on `rhea.picoctf.net`, with the port and password from the challenge page. The session lands in a directory holding three things: a checksum, a decrypt script owned by root, and a `files/` directory.
+
+```bash frame="code" title="SSH"
+ctf-player@pico-chall$ ls -la
+total 20
+drwxr-xr-x 3 ctf-player ctf-player   57 Mar 12  2024 .
+drwxr-xr-x 1 ctf-player ctf-player   20 Aug 28 02:15 ..
+-rw-r--r-- 1 root       root         65 Mar 12  2024 checksum.txt
+-rwxr-xr-x 1 root       root        856 Mar 12  2024 decrypt.sh
+drwxr-xr-x 2 ctf-player ctf-player 8192 Mar 12  2024 files
+ctf-player@pico-chall$ cat checksum.txt
+55b983afdd9d10718f1db3983459efc5cc3f5a66841e2651041e25dec3efd46a
+```
+
+`checksum.txt` holds a bare digest and nothing else, and that detail decides the whole approach. The built-in verifier, `sha256sum -c`, expects each line to carry a digest *and* the filename it belongs to. Handed a lone hash, it refuses to parse the file at all. So the question has to be turned around: instead of asking whether a named file matches, hash every candidate and look the digest up in the results.
+
+```bash frame="code" title="SSH" {2}
+ctf-player@pico-chall$ sha256sum files/* | grep "55b983afdd9d10718f1db3983459efc5cc3f5a66841e2651041e25dec3efd46a"
+55b983afdd9d10718f1db3983459efc5cc3f5a66841e2651041e25dec3efd46a  files/2cdcb2de
+ctf-player@pico-chall$ ./decrypt.sh files/2cdcb2de
+<flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{trust_but_verify_2cdcb2de}" />
+
+The eight characters closing the flag are the name of the file that matched. Both vary between copies of the challenge, but they come from a small set of prebuilt directories rather than being minted fresh, so two people can land on the same file and the same flag.
+
+## Why it works
+
+A digest is a statement about a file's content bytes and nothing else, so it can be checked against content and never against a name. `sha256sum` prints the digest and the filename on the same line, and `grep` prints whole lines, so matching on the half you already have hands back the half you want.
+
+The title is the lesson. A matching digest establishes that the bytes are the ones the reference value describes, which is integrity, and says nothing whatsoever about who produced them. A checksum only carries across whatever trust the digest's own channel already had. It creates none of its own, which is why real distribution signs the digest rather than merely publishing it beside the file.

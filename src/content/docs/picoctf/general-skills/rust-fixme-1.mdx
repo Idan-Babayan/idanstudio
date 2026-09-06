@@ -1,0 +1,56 @@
+---
+title: Rust fixme 1
+description: "PicoCTF Rust fixme 1: a program that already knows its own flag and will not build, with three deliberate mistakes that each carry the question their fix answers."
+environment: Standalone
+---
+
+> Goal: a Rust project that decrypts a flag it is already carrying, and refuses to compile. Three lines are wrong on purpose.
+
+## Approach
+
+Rust is not on the box by default, so the toolchain comes first. `rustup` installs the compiler and Cargo, its build tool and package manager, and `source` puts them on the path for the current shell without opening a new one.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> source $HOME/.cargo/env
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> wget https://challenge-files.picoctf.net/c_verbal_sleep/3f0e13f541928f420d9c8c96b06d4dbf7b2fa18b15adbd457108e8c80a1f5883/fixme1.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> gunzip fixme1.tar.gz
+┌──(Idan@Kali)-[~/Rust_fixme_1]
+└─> tar -xf fixme1.tar
+```
+
+`src/main.rs` turns out to be finished. It holds a key, 33 encrypted bytes as hex strings, and a call into the `xor_cryptor` crate that turns those bytes back into text. There is nothing to reverse and nothing to work out. It simply does not build, and the three faults each come with a comment naming the question you have to answer.
+
+```rust frame="code" title="src/main.rs, as shipped"
+let key = String::from("CSUCKS") // How do we end statements in Rust?
+
+    ret; // How do we return in rust?
+
+println!(
+    ":?", // How do we print out a variable in the println function?
+    String::from_utf8_lossy(&decrypted_buffer)
+);
+```
+
+Three tokens fix all of it: a `;` after the key, `ret` becomes `return`, and `":?"` becomes `"The flag is: {}"`. The last one is the only one that is not purely mechanical, since `{}` is the placeholder `println!` substitutes an argument into, and `:?` is a format specifier that means nothing until it sits inside one, as `{:?}`.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Rust_fixme_1/fixme1]
+└─> cargo run
+   Compiling rust_proj v0.1.0
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.30s
+     Running `target/debug/rust_proj`
+The flag is: <flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{4r3_y0u_4_ru$t4c30n_n0w?}" />
+
+## Why it works
+
+The challenge is not really about Rust, it is about reading what the compiler tells you. Each of the three faults is a different phase complaining: a missing semicolon is caught while parsing, `ret` is an unresolved name, and the format string fails while the macro expands. All three land in the same build, because the parser recovers from the missing semicolon instead of stopping there. `rustc` names the file and the line every time and proposes a repair for each, but only the semicolon's is the one to take: apply all three of its suggestions verbatim and the three errors become one, use of a moved value.
+
+The decryption never needed attention, but it is worth not describing it wrongly. `xor_cryptor` XORs the buffer against a stream derived from the key and then pushes the result through a fixed substitution table, so it is XOR based without being a one line XOR. The recorded bytes prove that on their own: four of the 33 have their top bit set, while both the key and the flag are plain ASCII, and exclusive-or of two seven bit values can never produce an eighth.

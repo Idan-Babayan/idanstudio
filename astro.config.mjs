@@ -69,7 +69,7 @@ export default defineConfig({
         // collapsed command+flag+path into one band of blues). one-light separates command vs flag
         // on every command line (catppuccin-latte merged them). Both pass WCAG AA on their code bg.
         themes: ['tokyo-night', 'one-light'],
-        // Tag privilege commands (sudo, ...) with .ec-cmd-priv so custom.css can color them
+        // Tag privilege commands (sudo, ...) with .ec-cmd-priv so overrides.css can color them
         // distinctly. Implemented as an EC plugin because EC 0.42 rejects Shiki DOM-transformer
         // hooks (span/etc). See src/lib/ec-priv-command.mjs for the mechanism + rationale.
         plugins: [pluginPrivCommand()],
@@ -82,7 +82,7 @@ export default defineConfig({
         // same-origin crossorigin font preload served from its own preload cache, so it warned
         // "preloaded but not used" on every page even though both faces paint above the fold. The
         // preload only shortened first-load FOUT (no CLS or LCP effect here). Do not re-add font preloads.
-        // Reading-progress bar (styled by #tp-progress in custom.css)
+        // Reading-progress bar (styled by #tp-progress in chrome.css)
         { tag: 'script', content: "window.addEventListener('DOMContentLoaded',function(){var b=document.createElement('div');b.id='tp-progress';document.body.appendChild(b);var u=function(){var h=document.documentElement,m=h.scrollHeight-h.clientHeight;b.style.width=(m>0?h.scrollTop/m*100:0)+'%';};document.addEventListener('scroll',u,{passive:true});window.addEventListener('resize',u);u();});" },
       ],
       title: "Idan.Lab",
@@ -102,10 +102,10 @@ export default defineConfig({
       // control at the top (see src/components/overrides/PageSidebar.astro). Default TOC preserved.
       components: {
         PageSidebar: './src/components/overrides/PageSidebar.astro',
-        // Additive Footer override: auto-appends the <Principle> coda from frontmatter and suppresses
-        // pagination on writeups that carry one (see src/components/overrides/Footer.astro). All other
-        // pages render the default footer unchanged.
-        Footer: './src/components/overrides/Footer.astro',
+        // Additive MarkdownContent override: appends the <Principle> coda from frontmatter INSIDE the
+        // content wrapper on HackTheBox writeups (see src/components/overrides/MarkdownContent.astro).
+        // The default Footer, and its Prev/Next pagination, renders unchanged on every page.
+        MarkdownContent: './src/components/overrides/MarkdownContent.astro',
         // Additive Head override: appends only the four social tags Starlight does not emit
         // (og:image, twitter:image/title/description). See src/components/overrides/Head.astro.
         Head: './src/components/overrides/Head.astro',
@@ -139,7 +139,29 @@ export default defineConfig({
         {
           label: 'PicoCTF',
           collapsed: true,
-          items: [{ autogenerate: { directory: 'picoctf', collapsed: true } }],
+          items: [
+            // Manual structure, same reason as HackTheBox: an autogenerate over the whole platform
+            // labels each middle-tier group with the RAW LOWERCASE DIRECTORY NAME, so the category
+            // tier would read "binary-exploitation" instead of "Binary Exploitation", and the
+            // platform's own index.mdx would render as a second "PicoCTF" entry nested under the
+            // group of the same name. Naming the groups here fixes both and lets the categories sit
+            // in a chosen order rather than alphabetically. Within a category, autogenerate's
+            // alphabetical order is correct: PicoCTF challenges are standalone, not sequential, so
+            // no page carries a sidebar.order.
+            // The SIX official picoCTF categories, in the platform's own order, each a collapsed
+            // toggle. There is no per-category index page and none is wanted: the toggle IS the
+            // middle tier, exactly as HackTheBox's Easy / Medium groups are.
+            // Each stays commented until its directory exists and holds a writeup: an
+            // autogenerate.directory that does not exist fails the build (same reason HTB Hard is
+            // commented out). Uncomment a line when its first writeup lands.
+            { label: 'Overview', link: '/picoctf/' },
+            { label: 'General Skills', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/general-skills' } }] },
+            { label: 'Cryptography', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/cryptography' } }] },
+            { label: 'Web Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/web-exploitation' } }] },
+            { label: 'Forensics', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/forensics' } }] },
+            // { label: 'Reverse Engineering', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/reverse-engineering' } }] },
+            { label: 'Binary Exploitation', collapsed: true, items: [{ autogenerate: { directory: 'picoctf/binary-exploitation' } }] },
+          ],
         },
         {
           label: 'OverTheWire',
