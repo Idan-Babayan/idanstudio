@@ -1,0 +1,34 @@
+---
+title: Super SSH
+description: "PicoCTF Super SSH: the challenge page hands over every parameter, so the only decision left in the solve is the host key prompt most people click through."
+os: Linux
+environment: Standalone
+---
+
+> Goal: the challenge page hands over a host, a port, a username and a password. Connect, and the flag arrives in what the login prints.
+
+## Approach
+
+Nothing has to be found here. Every parameter is printed on the challenge page, and `-p` is the only flag the invocation needs, because the instance does not listen on 22. The one decision the session actually contains arrives before the password does: this host has never been seen before, so OpenSSH prints its key fingerprint and asks whether to go on.
+
+```bash frame="code" title="Bash"
+┌──(Idan@Kali)-[~/Super_SSH]
+└─> ssh -p 49808 ctf-player@titan.picoctf.net
+The authenticity of host '[titan.picoctf.net]:49808 ([3.139.174.234]:49808)' can't be established.
+ED25519 key fingerprint is SHA256:4S9EbTSSRZm32I+cdM5TyzthpQryv5kudRP9PIKT7XQ.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '[titan.picoctf.net]:49808' (ED25519) to the list of known hosts.
+ctf-player@titan.picoctf.net's password:
+Welcome ctf-player, here's your flag: <flag>
+```
+
+<PasswordReveal term="Flag" password="picoCTF{s3cur3_c0nn3ct10n_5d09a462}" />
+
+picoCTF assigns the port when the instance is launched, so a reader following along is given a different one.
+
+## Why it works
+
+SSH authenticates in both directions, and this challenge sits on the half that gets clicked through. The password proves the client to the server; the host key proves the server to the client, and no authority vouches for that key in advance the way one does for a web server's certificate, so a first connection can only print a fingerprint and put the decision to the operator.
+
+`This key is not known by any other names` is OpenSSH reporting that it went looking: it searches the known hosts for this same key filed under any other name or address, and says so when it finds none. Answering `yes` writes the key down, so a substituted server is caught on the second visit and never on the first. The prompt takes a third answer for exactly that reason, a pasted fingerprint the client compares for you, but picoCTF publishes none for a launched instance, so there is nothing to paste.

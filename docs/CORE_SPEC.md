@@ -1011,11 +1011,12 @@ than the challenge is worse than one without it. Reference file:
   2. `## Approach`, opening with PROSE, never with a subheading. Fences and prose alternate.
   3. `<PasswordReveal term="Flag" password="picoCTF{...}" />`, with NO heading above it, directly under
      the fence whose flag output is masked as `<flag>`. **Where the recorded route produced no maskable
-     fence, it follows the prose (or an image caption) instead.** That is not a rare exception: five of
-     the nineteen PicoCTF pages sit this way, plus two Bandit pages. `ph4nt0m-1ntrud3r`'s solve IS the
+     fence, it follows the prose (or an image caption) instead.** That is not a rare exception: six of
+     the twenty-one PicoCTF pages sit this way, plus two Bandit pages. `ph4nt0m-1ntrud3r`'s solve IS the
      flag arriving in seven readable slices, so any fence showing the intermediate values would print the
      answer in full and defeat the masking; `red` decoded in CyberChef, `get-ahead` read the flag from a
-     Burp response header, `scan-surprise` uploaded to a browser decoder, and `insp3ct0r` assembles it
+     Burp response header, `scan-surprise` uploaded to a browser decoder, `cookie-monster-secret-recipe`
+     read the value out of a browser extension and decoded it there, and `insp3ct0r` assembles it
      from three fences none of which can be masked alone. Masking wins over the layout convention.
      A third shape exists and is fine: `stonks` sits under the `unscramble.py` SOURCE fence, because the
      script it shows is what produces the flag and no run of it was recorded.
