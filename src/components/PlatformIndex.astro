@@ -317,6 +317,10 @@ const countLabel = (n: number): string => (n === 1 ? 'writeup' : 'writeups');
 		   pages today but is exactly what a fifth platform would be on the day it is added. Without it
 		   that page's eyebrow would resolve to no colour at all rather than to the accent. */
 		--accent-ink: var(--pf-ink, var(--accent));
+		/* Everything on the landing rings in the platform by default (the wargame card, any control
+		   without a group); the rail pills and the writeup cards override to their own hue below and in
+		   pages.css. Before 2026-09-07 the wargame card fell through to the site default ring. */
+		--focus-ring: var(--accent);
 	}
 
 	/* ── HERO ── */
@@ -464,7 +468,7 @@ const countLabel = (n: number): string => (n === 1 ? 'writeup' : 'writeups');
 
 	/* ── FILTER RAIL ──
 	   Pills wear the VALUE register (Title Case mono 600, the type every chip on the site wears) and
-	   are tinted in the group hue: label, border and a 12% fill in
+	   are tinted in the group hue, as the cards are since 2026-09-07: label, border and a 12% fill in
 	   --pill. A group
 	   pill carries the global .tx-<slug> class (components.css), which sets --tx from the difficulty
 	   arc or the category ring; the rule below reads it into --pill. ALL keeps the base neutral (Starlight's gray-2, dark
@@ -497,6 +501,11 @@ const countLabel = (n: number): string => (n === 1 ? 'writeup' : 'writeups');
 		color: var(--pill);
 		border: 1px solid color-mix(in oklab, var(--pill) 45%, transparent);
 		background: color-mix(in oklab, var(--pill) 12%, transparent);
+		/* The pill rings in its OWN hue (owner decision 2026-09-07): the group hue on a group pill, the
+		   neutral on ALL, the colour its label, border, fill and pressed ring already wear, and the rule
+		   the cards follow. Against the page the arc reads 7.38 or better dark and 6.15 or better light,
+		   the neutral 11.31 and 9.65. */
+		--focus-ring: var(--pill);
 		transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 	}
 	.pi-pill[class*='tx-'] {

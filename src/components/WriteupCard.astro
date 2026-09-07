@@ -13,9 +13,11 @@
  * description, a go). The meta line states the writeup's classification ONCE: its GROUP on
  * the platform's axis (a difficulty tier on HackTheBox and VulnHub, a picoCTF category on
  * PicoCTF) as a glyph plus a word, then the facts that vary within the platform (OS, and the
- * environment when it varies). Hue lives in the GLYPH: the pips or the swatch read the group's
- * --tx from the difficulty arc or the category ring, every word stays text-coloured, and the
- * platform accent stays the card's lead on the bar, the hover border and the glare. This replaced a cyan uppercase eyebrow plus a row of legacy .meta-badge pills, which
+ * environment when it varies). The card WEARS its group's hue (owner decision 2026-09-07): the
+ * pips or the swatch, the accent bar, the hover border, the cursor glare and the keyboard ring all
+ * read the group's --tx from the difficulty arc or the category ring, every word stays
+ * text-coloured, and the platform accent retreats to the hero, so the grid reads as the axis laid
+ * out as a map and matches the rail. This replaced a cyan uppercase eyebrow plus a row of legacy .meta-badge pills, which
  * stated the rating twice per card in a palette the writeup row had already left behind.
  * The pips are the shared DifficultyPips glyph, so the card and the writeup's badge row
  * render the rating from one markup and one colour.
@@ -107,7 +109,7 @@ const dataAttrs: Record<string, string> =
 
 <a
 	href={href}
-	class={`wc-card pf-${platform} reveal`}
+	class={`wc-card pf-${platform} tx-${group.slug} reveal`}
 	data-tilt
 	{...dataAttrs}
 	data-platform={platform}
@@ -181,10 +183,15 @@ const dataAttrs: Record<string, string> =
 		transition: transform 0.12s ease, border-color 0.3s ease;
 		overflow: hidden;
 		will-change: transform;
-		/* Per-platform accent (global .pf-* sets --pf-accent, theme-aware) is the lead, used on
-		   the bar / glare / hover (card identity). The universal cyan secondary is the duotone
-		   partner, used on the "Read writeup" affordance. */
-		--accent: var(--pf-accent, var(--sl-color-accent));
+		/* The card wears its GROUP's hue (owner decision 2026-09-07, after a measured study of both
+		   rules): the root carries the global .tx-<slug> class, which sets --tx from the difficulty arc
+		   or the category ring, and that hue leads on the bar, the hover border, the glare and (pages.css)
+		   the focus ring, the same hue as the card's pips or swatch and its rail pill. The platform
+		   accent (.pf-*, --pf-accent) retreats to the hero, the name, the stat, the glow and the
+		   pagination ring, which is what stopped lime saturating HackTheBox. The fallback fires only for
+		   a slug with no .tx-* rule, the same posture as the swatch and the pips. The universal cyan
+		   secondary is the duotone partner, used on the "Read writeup" affordance. */
+		--accent: var(--tx, var(--pf-accent, var(--sl-color-accent)));
 		--accent-2: var(--pf-accent-2, var(--tp-cyan));
 	}
 	/* Light mode: warm paper card with a soft lift so it does not read flat. */
@@ -278,7 +285,8 @@ const dataAttrs: Record<string, string> =
 		font-weight: 400;
 	}
 	/* The mixed-grid platform word reads the platform INK, the text variant of the accent that
-	   clears 4.5:1 at body size on paper (pages.css --pf-ink). */
+	   clears 4.5:1 at body size on paper (pages.css --pf-ink). On a mixed grid it is the only platform
+	   colour on the card, since the bar wears the group hue. */
 	.wc-platform {
 		color: var(--pf-ink, var(--pf-accent));
 	}
@@ -327,6 +335,15 @@ const dataAttrs: Record<string, string> =
 		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+		transition: color 0.3s ease;
+	}
+	/* Under the cursor glare at its 22% peak the 62% mix measured 4.49 on the dark card and 4.32 on
+	   light under the lime accent, and 4.12 to 5.40 under the group hues (the deep light hues darken
+	   paper a little more than lime did). Lifting the mix to 68% while the glare is up keeps the
+	   description at 4.87 or better in both themes for every hue (computed on the composite); the
+	   title never dropped below 9.9. Colour only, so it needs no reduced-motion gate. */
+	.wc-card:hover .wc-desc {
+		color: color-mix(in oklab, var(--sl-color-text) 68%, transparent);
 	}
 
 	.wc-go {
