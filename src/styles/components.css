@@ -191,6 +191,28 @@ html[data-theme="dark"] .task-title {
 .writeup-meta .wm-pips[data-level="3"] i:nth-child(3) { width: 7px; height: 7px; }
 .writeup-meta .wm-pips[data-level="4"] i:nth-child(4) { width: 8px; height: 8px; }
 
+/* ── Taxonomy vocabulary: slug to hue, declared once ──────────────────────────
+   The ten value classes every taxonomy consumer carries (the rail pill, the card meta line, the
+   category chip, the difficulty chip). Each sets --tx from a token in tokens.css: the four difficulty
+   slugs from the ORDINAL arc (--tier-*: sky, violet, magenta, orange, cold to hot along one short arc
+   of the wheel, the pips carrying the order), the six PicoCTF categories from the NOMINAL ring (--tx-*).
+   Consumers read var(--tx) and never a token directly, so a hue moves in exactly one place and a
+   slug's hue in exactly one other. The two palettes never share a page and share no hex except Easy's
+   light seat, which is the ring's blue solved against the cyan ink; the glyph (round pips against a
+   square swatch) separates the axes wherever a mixed grid would put them together. Slugs are the
+   directory names (src/lib/taxonomy.mjs). Reverse Engineering holds no writeup yet and takes the
+   ring's weakest slot on purpose. */
+.tx-easy                { --tx: var(--tier-easy); }
+.tx-medium              { --tx: var(--tier-medium); }
+.tx-hard                { --tx: var(--tier-hard); }
+.tx-insane              { --tx: var(--tier-insane); }
+.tx-general-skills      { --tx: var(--tx-teal); }
+.tx-cryptography        { --tx: var(--tx-violet); }
+.tx-web-exploitation    { --tx: var(--tx-blue); }
+.tx-forensics           { --tx: var(--tx-coral); }
+.tx-reverse-engineering { --tx: var(--tx-orange); }
+.tx-binary-exploitation { --tx: var(--tx-rose); }
+
 /* The visually hidden difficulty text ("Difficulty N of 4") is covered by the global .sr-only utility
    in utilities.css. The duplicate that used to sit here carried byte-identical declarations and was
    already being won by that utility anyway (utilities is a later layer than components), so it was
