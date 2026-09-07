@@ -44,7 +44,8 @@ html[data-theme="light"] .hero h1 {
 /* Per-platform accent token, theme-aware. Any index element tagged .pf-{platform}
    (the PlatformIndex root and every WriteupCard) inherits it, so a future mixed
    /writeups grid colors each card with no extra wiring. Darkened variants on paper
-   keep contrast (aligned with the .platform-* badge inks). */
+   keep contrast (the same darkened family the WriteupMeta platform chips read; the
+   legacy .platform-* badge inks this note used to cite were retired with that family). */
 /* The second selector of each pair lifts the platform onto the landing's prev/next pagination
    container, which sits in Starlight's footer OUTSIDE the .pi-index subtree and so inherits nothing
    from it. :has() keys it on the landing root's own .pf-* class, so a page with no .pi-index (every
