@@ -105,6 +105,29 @@ body:has(.pi-index.pf-overthewire) .pagination-links { --pf-accent: #ffc23d; }
    4.16 red, 4.86 purple, 3.50 amber, and 3.71 / 3.76 / 4.38 / 3.16 under a dot of the light grid.
    Writeup pages carry no .pi-index and keep the site default ring. */
 body:has(.pi-index) .pagination-links { --focus-ring: var(--pf-accent); }
+
+/* No sideways scroll on a landing. The hero glow (.pi-glow, inset -12% left and -10% right of the
+   hero) is MEANT to spill past its box and fade out beyond the screen edge, and nothing clipped that
+   spill. Measured on the built pages: it is the ONLY element overflowing the viewport, by 71px at
+   1280 and 45px at 640, so every landing wobbled sideways under a trackpad or a thumb.
+   IT TAKES BOTH RULES. A rule on either box ALONE measures as doing nothing at all. Overflow
+   propagates to the viewport from the ROOT, and from BODY only while the root is `visible`, and the
+   box whose value propagates keeps a used value of `visible`, so it clips nothing itself. On <html>
+   alone the value therefore leaves for the viewport and no box clips: scrollWidth stayed 1341
+   against a 1270 viewport and a real wheel gesture still moved the page the full 71px, reading
+   identically to the rule being deleted. On body alone, with the root left `visible`, the value
+   propagates from body for the same reason and measures the same 1341 and 71px. Together the root's
+   value stops body from propagating, body's own box becomes the one that clips, and scrollWidth
+   drops to exactly the viewport width with the page unscrollable sideways.
+   `clip` rather than `hidden` on both: `hidden` coerces the paired `overflow-y` to `auto` and makes
+   the box a scroll container, which on body would put every sticky descendant in a scrollport that
+   never scrolls. `clip` leaves `overflow-y: visible` and creates no scroll container. The fixed
+   sidebar and header are unaffected either way, since the viewport is their containing block.
+   Scoped with :has() to pages that carry a landing, so no writeup page is in either selector. The
+   marketing pages solve the same problem on their own body rule, which is why these four were the
+   only pages that ever showed it. */
+html:has(.pi-index) { overflow-x: clip; }
+body:has(.pi-index) { overflow-x: clip; }
 } /* @layer pages */
 
 /* Focus ring: a landing card rings in its GROUP's hue (owner decision 2026-09-07), the same hue as its
