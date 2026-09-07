@@ -100,9 +100,9 @@ Full description in CORE_SPEC §5. What a session must not get wrong:
 
 ## Writeups
 
-Flat `.mdx` at `src/content/docs/<platform>/<difficulty>/<slug>.mdx`. Reference file: `busqueda.mdx`. Full conventions in CORE_SPEC §7. The rules that break the build or the page if missed:
+Flat `.mdx` at `src/content/docs/<platform>/<middle>/<slug>.mdx`, where the middle directory is validated per platform (first rule below). Reference file: `busqueda.mdx`. Full conventions in CORE_SPEC §7. The rules that break the build or the page if missed:
 
-- **Metadata is FRONTMATTER ONLY.** Set `os`, `environment`, and `difficulty`. The `WriteupMeta` badge row is INJECTED by `plugins/remark-inject-writeupmeta.mjs`: never import it, never write the tag. `platform` is NOT a frontmatter field, it is derived from the directory, so it cannot be mistyped. Values are strict enums in `src/content.config.ts`, so casing matters. Omit `difficulty` for progressive wargames (Bandit). `badges: false` (unquoted boolean, never `no` or `off`) opts a page out. `principle:` (the closing coda) is HackTheBox-only and optional; anywhere else the build fails.
+- **Metadata is FRONTMATTER ONLY.** Set `os`, `environment`, and `difficulty`. The `WriteupMeta` badge row is INJECTED by `plugins/remark-inject-writeupmeta.mjs`: never import it, never write the tag. `platform` is NOT a frontmatter field, it is derived from the directory, so it cannot be mistyped. Values are strict enums in `src/content.config.ts`, so casing matters. **The middle directory is validated per platform** (`src/lib/taxonomy.mjs`): a HackTheBox or VulnHub writeup sits in a tier directory (`easy`, `medium`, `hard`, `insane`) and its `difficulty` is REQUIRED and must match that directory; a PicoCTF writeup sits in one of the six category directories and carries NO `difficulty` (its category is derived from the directory, never a frontmatter field); OverTheWire carries no `difficulty` either. Each of those fails the build otherwise, and there is no `misc` fallback. `badges: false` (unquoted boolean, never `no` or `off`) opts a page out. `principle:` (the closing coda) is HackTheBox-only and optional; anywhere else the build fails.
 - **The recon findings rail is a PLAIN MARKDOWN LIST** inside `<Callout type="recon">`. No component, no import, no markup:
 
   ```mdx

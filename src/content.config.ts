@@ -11,7 +11,12 @@ export const collections = {
 			// rather than hand-placed, so frontmatter is the authoring surface and this schema is its
 			// first line of validation. `platform` is deliberately absent: it is derived from the
 			// writeup's platform directory (the directory is authoritative, as for the sidebar and
-			// PlatformIndex), so it can never be mistyped here.
+			// PlatformIndex), so it can never be mistyped here. `category` is absent for the same
+			// reason: a PicoCTF writeup's category IS its middle directory (picoctf/<category>/), derived
+			// by the injector against src/lib/taxonomy.mjs, and a frontmatter `category:` key fails the
+			// build there. The path-dependent difficulty rules (required on hackthebox/ and vulnhub/ and
+			// equal to the tier directory, forbidden elsewhere) also live in the injector, which is the
+			// one pass that sees both the path and the frontmatter; Zod sees only the frontmatter.
 			// The enums MIRROR the component's unions in src/components/badges/icons.ts EXACTLY,
 			// including casing and the space in "Active Directory". Keep the two in step: a value
 			// this schema accepts but the component rejects would fail later and less clearly.
