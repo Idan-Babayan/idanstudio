@@ -533,6 +533,11 @@ const isEmpty: boolean = total === 0;
 	.pi-wg-card:hover {
 		border-color: var(--accent);
 	}
+	/* Same fix as WriteupCard: the light base rule outranks the hover rule, so the amber hover border
+	   never showed on paper before 2026-09-07. */
+	html[data-theme='light'] .pi-wg-card:hover {
+		border-color: var(--accent);
+	}
 	.pi-wg-bar {
 		position: absolute;
 		left: 0;

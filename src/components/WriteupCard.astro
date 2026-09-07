@@ -126,6 +126,12 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 	.wc-card:hover {
 		border-color: var(--accent);
 	}
+	/* Light needs its own hover rule: the light base rule above carries an attribute selector and
+	   outranks .wc-card:hover, so the hover border never showed on paper (found 2026-09-07 while
+	   verifying the group-hue chrome; the glare, which has no light override, always worked). */
+	html[data-theme='light'] .wc-card:hover {
+		border-color: var(--accent);
+	}
 
 	.wc-accent-bar {
 		position: absolute;
