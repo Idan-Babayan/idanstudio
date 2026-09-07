@@ -6,6 +6,177 @@
 
 ---
 
+### 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model
+- **Supersedes in part:** 2026-07-19 · `.machine-meta` deleted; the REST of the badge family is not dead
+  (corrects the entry below). Only the bullet "`platform-*` is kept although it renders 0 times today":
+  `WriteupCard` no longer emits any legacy badge class, so the whole `.meta-badge` / `.platform-*` /
+  `.difficulty-*` / `.os-*` family became dead in effect, was measured at zero anchored tokens in `dist`,
+  and was deleted. The rule that entry states, that a rule with a live emitter is not dead, stands.
+- **Supersedes in part:** 2026-07-10 · WriteupMeta revised: intentional per-axis color, restrained glow,
+  growing pips. Only the "still achromatic" clause of the Difficulty chip bullet: the FILLED pips now take
+  the level hue; the word, the box, the size and the growth rule stand.
+- **Supersedes in part:** 2026-06-14 · Platform-index duotone: platform color + universal cyan secondary.
+  Only "difficulty colors on the stat breakdown", the cyan card eyebrow, and "cyan ring on the active
+  filter pill": the breakdown and the eyebrow are gone, and the pressed pill rings in its own hue (owner
+  decision, same day). The cyan stat label and "Read writeup" affordance stand.
+- **Supersedes in part:** 2026-06-01 · Canonical platform palette: lime / red / purple / amber. Only the
+  "Side effect handled" bullet, the leading glow dot on `.platform-*` badges: the badge is gone and
+  neither taxonomy palette contains green, so the collision it patched cannot recur. The palette itself
+  is untouched.
+- **Supersedes in part:** 2026-07-17 · Badge glyphs normalized to a 14px grid; HackTheBox to currentColor;
+  polychrome/monochrome sourcing axis. Only the "Accessibility (folded in)" clause that keeps the Active
+  Directory credit in `<metadata>`: the credit now ships as a `data-credit` attribute on the svg root,
+  because `<metadata>` is text content and put "Amido Limited" and "Richard Slater" in the chip's
+  textContent and in the Pagefind body of every Active Directory page. The property that entry records,
+  that the normalizer strips comments, stands and is why an attribute rather than a comment carries it.
+- **Decision:** what a writeup's MIDDLE directory means is declared once, per platform, in
+  `src/lib/taxonomy.mjs` (`PLATFORM_AXIS`: difficulty tiers `easy | medium | hard | insane` on HackTheBox
+  and VulnHub, the six official picoCTF categories on PicoCTF; OverTheWire renders in wargames mode and has
+  no axis). `PlatformIndex` groups by that axis and fails the build on an unknown middle directory, on a
+  writeup with no middle directory, and on a writeups-mode platform with no axis; there is no `misc`
+  fallback anywhere. The injector, the one pass that sees both path and frontmatter, derives PicoCTF's
+  `category` from the directory exactly as it derives platform (a frontmatter `category:` fails), requires
+  HackTheBox and VulnHub `difficulty` and requires it to equal the tier directory, and fails a `difficulty`
+  on PicoCTF or OverTheWire. Classification wears TWO palettes, one per vocabulary, both reached through
+  ten `.tx-*` value classes in `components.css` so a consumer reads `var(--tx)` and never a token. The
+  ORDINAL difficulty ARC (`--tier-easy` sky, `--tier-medium` violet, `--tier-hard` magenta, `--tier-insane`
+  orange in `tokens.css`) is four hues on one short arc of the wheel, cold to hot with saturation climbing
+  too, the pips carrying the order, and it belongs to HackTheBox and VulnHub. The NOMINAL category RING
+  (`--tx-blue`, `--tx-teal`, `--tx-orange`, `--tx-rose`, `--tx-coral`, `--tx-violet`) belongs to PicoCTF
+  alone (General Skills teal, Cryptography violet, Web Exploitation blue, Forensics coral, Reverse
+  Engineering orange, Binary Exploitation rose). The two share no hex except Easy's light seat, and the
+  glyph separates the axes wherever a mixed grid would meet (round pips against a square swatch). A CARD
+  WEARS ITS GROUP'S HUE (owner decision, same day): the accent bar, the hover border, the cursor glare and
+  the keyboard ring all read the group's `--tx`, the words stay text-coloured, and the platform accent
+  retreats to the hero, the name, the stat, the glow, the wargame card and the pagination, which is what
+  stopped lime doing four jobs at once on HackTheBox. On the writeup row a category chip is a normal
+  `--wm-c` chip and the Difficulty chip stays a neutral box whose filled pips take the hue. The FOCUS
+  SYSTEM follows the same rule: every rail pill rings in its own hue through `--focus-ring: var(--pill)`,
+  a card rings in `var(--tx)`, the landing root defaults to the platform so the OverTheWire wargame card
+  stops falling through to the site default, and the landing's prev/next links, which Starlight renders in
+  the footer outside the landing's subtree, are reached by pairing each platform token with
+  `body:has(.pi-index.pf-<platform>) .pagination-links` so a page with no landing matches nothing.
+  ALL is neutral; the rail is MULTI-SELECT (owner
+  decision, same day, replacing a single-select first cut): group pills are independent `aria-pressed`
+  toggles, any number may be pressed, a card shows on a match with ANY pressed value, a pressed pill
+  releases on a second press, and ALL is the cleared state rather than a value, pressed exactly when no
+  group pill is and clearing them all when pressed; the hero breakdown is replaced by
+  counts in the pills; a category-axis hero carries a second stat. The pips glyph is one component,
+  `badges/DifficultyPips.astro`, with unfilled pips drawn as rings so "N of 4" is visible on paper. The
+  card's facts rule is computed: a fact renders only if it varies within the platform, and two facts
+  stack under the group line so titles align. Capitalisation is one law: a `//` kicker and the slot
+  labels are UPPERCASE tracked mono, every value and control is Title Case mono 600, prose and
+  affordances are sentence case; lowercase chrome does not exist.
+- **Why:** measured on the built pages in both themes, the HackTheBox landing had ALL and EASY as two
+  green pills of one shape (lime `#b6ff3c` against `#4ade80`), lime carried four meanings at once (site
+  accent, platform identity, "no filter", and the neighbouring Easy green), Easy was printed four times
+  on the landing and a fifth way on the writeup, casing followed the raw directory slug (`2 easy`, `ALL
+  EASY MEDIUM`, `Easy`), and the four difficulty pills failed AA on light (2.26 to 3.43). The PicoCTF
+  landing rendered all 21 challenges as `misc` because `difficultyOf()` coerced the category directory to
+  a tier that existed nowhere in the content, so the rail never rendered, and every card repeated its own
+  title through the `PicoCTF <Title>:` description prefix. The landing card still used the 2026-06
+  `.meta-badge` palette (Tailwind-400 hexes, hand-tuned light fills, Linux slate) while the writeup row had
+  moved to the OKLCH-solved single-token chip model in July, so the same fact wore two colours on adjacent
+  pages. The owner asked for a design-system cleanup, not isolated CSS fixes.
+- **How the direction was chosen:** three independent read-only directions (system-first, restraint-first,
+  identity-first) were produced and adversarially verified on contrast arithmetic, architecture and the
+  brief. The synthesis took the identity direction's shared ring and unboxed card meta line, the
+  restraint direction's neutral ALL and rail-with-counts, and fixed what the verifiers found: gold and
+  amber excluded from the ring outright (gold is the flag-loot signal, amber the OverTheWire identity, and
+  both had been proposed for Medium or Cryptography), Easy moved off the cyan family, orange given a
+  lightness axis against the Linux chip, unfilled pips made visible, the card's accessible name built from
+  its meta, and the registry made a dependency-free `.mjs` because the injector runs in Node outside Vite.
+- **The palette, solved and measured:** dark values sit at OKLCH L 0.79 (orange 0.70, coral 0.76) at about
+  half a platform accent's chroma; light values hold the hue, drop lightness and clamp chroma so a
+  12px/600 label clears 5.1:1 on a 12% same-hue fill over paper, keeping the per-pixel floor under the
+  dot grid above 4.5 (blue and teal deepened past the solver to L 0.41 and 0.40 for a lightness axis
+  against the cyan and lime inks). Canvas readback on the built pages: light pill labels 5.12 to 6.31 on
+  their own fill, dark 6.2 to 9.1 at rest and 5.3 to 7.3 on the pressed 22% fill; pips and swatches 6.8
+  to 10.4 on the card; the own-hue pressed ring 8.8 to 11.3 dark and 6.1 to 9.7 light against the page.
+  Every hue sits at least dEOK 0.065 from every chip and accent it can meet on a page.
+- **Rejected:** gold or amber as a taxonomy hue; a `misc` fallback tier; platform colour on the ALL pill;
+  the cyan secondary as the selected-pill indicator (adopted first, then replaced the same day by the
+  owner: a selected Easy is more Easy, not more cyan); boxed `--wm-c` chips on the landing card (the
+  unboxed meta line keeps the platform accent the loudest colour, and a chip fill would have had to go
+  opaque under the hover glare); a magenta-only heat ramp (Easy and Medium separated under the 0.065
+  floor and the ramp sat in VulnHub's red family); a fully hue-free difficulty chip on the writeup row
+  (the same glyph would then wear two colours on the card and the writeup); six drawn category glyphs for
+  now (one square swatch, the hue says which); keeping the legacy CSS until this entry was written (the
+  owner chose to delete once `dist` measured zero tokens); a `category` frontmatter field; single-select
+  `aria-pressed` pills (the first cut, replaced the same day: a pressed toggle that cannot be released does
+  not honour the contract the role announces, and two tiers could not be viewed together); ONE SHARED RING
+  for both vocabularies (the first cut, replaced the same day on the owner's review: a rating wore a
+  category's colour, and four hues spread around the wheel read as labels rather than as a scale, so
+  difficulty took its own arc and the ring became PicoCTF-only); single-hue ramps of every kind, a yellow
+  or an amber seat (the flag gold and the Linux chip own that seat in both themes) and HackTheBox's own
+  green / yellow / red / purple scale, all measured on a study page and rejected on the way to the arc;
+  the platform accent as the landing card's LEAD colour (replaced the same day after a measured study of
+  both rules on both platforms: one card carried two colours for one fact); and a bar-only half measure
+  between the two (the card snapped from its group to the platform on hover, the worst of both).
+- **Recorded kinships, unfixed because the pairs never share a page:** teal against the Progressive chip
+  (dEOK 0.016 dark; Progressive renders on OverTheWire rows only), violet against the Active Directory
+  chip (0.033; AD renders on HackTheBox rows only, violet on PicoCTF), orange against the light
+  OverTheWire ink (0.057; the RING's orange is Reverse Engineering, which has no writeup, so the pair has
+  never met; the ARC's orange is Insane, and it renders on machine pages, which carry FlagCapture gold and
+  not the PasswordReveal amber). Ring orange is the weakest slot and is re-judged on the real rail the day
+  Reverse Engineering lands.
+- **Properties to know (measurement):** `color-mix(in oklab, X p%, transparent)` composites as X at alpha
+  p in sRGB gamma space; compositing in linear light understates a dark 12% fill's contrast by about
+  half, which is what made a first pass disagree with this project's recorded figures. In a hidden
+  browser pane CSS transitions do not advance and animation frames are throttled, so a readback taken
+  after a click reports the RESTING fill and no shadow while a screenshot, which forces a frame, shows
+  the pressed state: disable the transition or force the class before measuring a state.
+- **Property to know (overflow):** overflow PROPAGATES to the viewport from the ROOT, and from BODY only
+  while the root is `visible`, and the box whose value propagates keeps a used value of `visible`, so it
+  clips nothing itself. A rule on either box ALONE therefore does nothing at all. It takes both: the
+  root's value stops body from propagating, and body's own box is then the one that clips. `clip` rather
+  than `hidden` on both, because `hidden` coerces the paired `overflow-y` to `auto` and makes the box a
+  scroll container, which on body would put every sticky descendant in a scrollport that never scrolls.
+  A script can scroll a clipped box either way, so the honest test is a real wheel gesture, not
+  `scrollTo`.
+- **Verified:** `npm run build` green at 67 pages throughout; `dist` anchored counts `meta-badge` 0,
+  `difficulty-misc` 0, `pi-breakdown` 0, `data-category` 21, `wm-cat` 21, `data-difficulty` 3; four
+  negative fixtures fail the build with the intended messages (a `picoctf/misc/` directory, a HackTheBox
+  `difficulty` disagreeing with its tier, a hand-authored `meta-badge` span, a `difficulty` on PicoCTF, a `category` key on a HackTheBox
+  writeup, which the first cut had let through because the check sat inside the PicoCTF branch);
+  both landings in both themes at 1280px and 375px; filter clicks, `aria-pressed` and the live status;
+  OverTheWire (wargames mode), VulnHub (empty panel), Bandit rows, busqueda, forest, head-dump, verify and
+  n0s4n1ty-1 rows; the homepage and About untouched; `overrides.css` still 13 rules; no dependency change;
+  no `.mdx` change. Second pass the same day, on Hard and Insane fixtures: the multi-select rail exercised
+  on both landings (Easy, then Easy plus Medium, then Medium alone, then release to ALL; Hard plus Insane;
+  Cryptography plus Binary Exploitation 4 of 21); orange measured on the Hard fixture (6.28 rest and 5.28
+  pressed dark, 7.1 dark ring on the page, 3.74 dark pip under the glare), every figure above its bar.
+- **Verified, third pass, while committing:** the change set landed as fourteen commits, each built green
+  at 67 pages on its own, with a byte-level gate proving the sum of them equals the reviewed tree exactly.
+  Read back on the built site in both themes: the arc's light seats on the HackTheBox cards (Easy
+  `#045077`, Medium `#683f9f`) identical across accent, focus ring and bar; all five present ring hues on
+  the PicoCTF cards; pills ringing in their own hue with ALL at the neutral `#353841`; the OverTheWire
+  wargame card ringing amber; each landing's pagination ringing its platform; and a PicoCTF writeup page
+  keeping the site default lime with `--pf-accent` unset, which is the `:has()` scope proving itself. The
+  multi-select rail re-exercised end to end (press Easy, add Medium for the union, release Easy, release
+  Medium, then ALL clearing a pressed pill), with the live status reading correctly at each step. Two
+  negative fixtures re-run: a frontmatter `category` on a HackTheBox writeup and a hand-authored
+  `meta-badge` span each fail the build with the intended message and line.
+- **THE SIDEWAYS-SCROLL FIX RECORDED ABOVE WAS WRONG, and is corrected (same day).** `html { overflow-x:
+  hidden }` in `base.css` was measured to do NOTHING: with the rule in place the landing still reported
+  scrollWidth 1341 against a 1270 viewport and a real wheel gesture still moved it the full 71px, reading
+  identically to the rule being deleted. The mechanism is the propagation property above, which that
+  rule's own comment stated and then drew backwards. The glow is the only element on the site that
+  overflows the viewport, by 71px at 1280 and 45px at 640. The working fix is the pair
+  `html:has(.pi-index)` and `body:has(.pi-index)`, both `overflow-x: clip`, in `pages.css` with the other
+  landing rules; `base.css` goes back to carrying only the focus ring. Verified after: scrollWidth equals
+  the viewport on all four landings, zero movement under a real wheel gesture at 1280 and at 640,
+  `overflow-y` still `visible` on body so nothing became a scroll container, and a writeup page computing
+  `visible` on both boxes because it is in neither selector.
+- **Status:** Adopted; committed to `dev` on 2026-09-07 as fourteen commits, taxonomy registry through
+  tokens, badges, the content gate, the landing rewrite, the colour decision and the badge retirement,
+  with the four unrelated fixes it uncovered (the Active Directory credit, the landing stat resting at
+  zero, the light hover border, the sideways scroll) landed separately. Docs synced the same day:
+  CORE_SPEC (section 4 tree; section 6 platform palette, ink family, duotone, both badge blocks and the
+  new "Taxonomy palettes" block; section 7 pipeline, plugins, MDX conventions, PicoCTF template and badge
+  system; section 11), ROADMAP (the PicoCTF category item and the light-pill AA bug deleted as
+  completed), CLAUDE.md (the per-platform directory rule).
+
 ### 2026-09-03 · WriteupMeta `os` becomes optional: a web challenge has no target operating system
 
 - **Supersedes in part:** 2026-07-19 · WriteupMeta difficulty becomes optional; Bandit's 34 pages migrate
@@ -1506,6 +1677,11 @@
   The 36 vs 1 gap is what exposed it.
 - **`platform-*` is kept although it renders 0 times today:** it is the `showPlatform` path, reserved for the
   planned global `/writeups` index (CORE_SPEC §6). Unused-but-wired is not dead.
+  **Partly superseded by:** 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model. Only this bullet is stale: `WriteupCard` no longer emits
+  `platform-*` nor any other legacy badge class, so the rules were dead in effect and the whole family was
+  deleted once `dist` measured zero anchored tokens; the `showPlatform` path now renders the platform word
+  in `--pf-ink` at the head of the card's meta line. The rule this bullet states, that a rule with a live
+  emitter is not dead, stands.
 - **The guard's remaining families are kept too:** the guard only ever sees hand-authored MDX, so they match
   nothing today, but they cost nothing and still catch a typo in any badge a future writeup hand-authors.
   Only `machine-`, whose sole token is now unstyled everywhere, is removed. This narrows, and partly reverses,
@@ -1687,6 +1863,10 @@
   from inlined glyphs (an `<?xml?>` prolog becomes a bogus comment node in an HTML document). **Property to
   know:** the normalizer strips comments, so a comment is no longer a safe home for load-bearing text, which
   is exactly why the credit lives in `<metadata>`.
+  **Partly superseded by:** 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model. Only the `<metadata>` home of the credit is stale: it now ships as a
+  `data-credit` attribute on the svg root, which the normalizer never touches and which is not text
+  content, so it no longer sits in the chip's textContent or the Pagefind body. The stripping property
+  and the aria-hidden rule stand.
 - **Verified live (both themes):** all nine glyphs within ~1.14x; HackTheBox icon and label compute identical
   in both themes; no disc behind Tux and his light regions survive; no `.st0` leaked globally; every chip's
   textContent is exactly its label. `npm run build` green (46 pages). No new deps.
@@ -2275,6 +2455,10 @@ data URI rather than hashing.
   the chip is the only visible label; `sr-only` "Difficulty N of 4" stays). Magnitude is carried by pips
   that both FILL and GROW with level (the leading filled pip enlarges 6→8px as level rises), so higher
   difficulty outweighs lower beyond count alone, still achromatic.
+  **Partly superseded by:** 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model. Only "still neutral and hue-free" and "still achromatic" as they
+  apply to the PIPS are stale: the filled pips now take the level hue from the difficulty arc (Easy sky,
+  Medium violet, Hard magenta, Insane orange) through the shared `DifficultyPips` glyph, and unfilled pips are rings in the same colour so
+  the denominator is visible on paper. The word, the box, the size, the weight and the growth rule stand.
 - **Layout:** the bottom border/divider is GONE; the block is a single flex row, tight under the title
   (`margin-top: 0.55rem`) with open space before the body (`margin-bottom: 2.1rem`).
 - **Status:** built clean (45 pages), verified both themes + the previously-broken Progressive chip now
@@ -3023,6 +3207,11 @@ automatically; no astro.config.mjs edit is needed per writeup.
   (`--pf-accent-2`: `#41efff` dark, `#08697a` light) is the duotone partner. Cyan on the stat label,
   card eyebrow, and "Read writeup" affordance; difficulty colors on the stat breakdown; cyan ring on
   the active filter pill; platform color stays on the name, count-up number, and card accent bar.
+  **Partly superseded by:** 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model. Three of these are stale: the difficulty-coloured stat breakdown
+  and the cyan card eyebrow are gone (enumeration lives in the rail pills, which are tinted by the taxonomy
+  ring, and the card's meta line is text-coloured with only its glyph in hue), and the pressed filter pill
+  rings in its own hue rather than cyan. Cyan on the stat label and the affordance, and the platform colour
+  on the name, the count and the card bar, stand.
 - **Why:** Single-color platforms read monochrome (worst on HackTheBox: green on green). Cyan is not
   any of the four platform hues, so it complements all. Keeps the platform color clearly the lead.
 - **Status:** Adopted and committed/pushed to `dev`.
@@ -3107,6 +3296,10 @@ automatically; no astro.config.mjs edit is needed per writeup.
   `.platform-*` badge gets a leading glowing `::before` dot (echoing the sidebar dot, colored
   via `currentColor`) so a platform badge never reads as a difficulty pill. `difficulty-*`,
   `os-*`, and `tag-*` rules are unchanged; Easy stays emerald.
+  **Partly superseded by:** 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model. Only this bullet is stale: the `.platform-*` badge and its glow dot
+  were deleted with the whole legacy badge family, and Easy is no longer green (it is sky, on a difficulty
+  arc that contains no green), so the collision the dot patched cannot recur. The palette decision itself
+  stands.
 - **Status:** Adopted.
 
 ### 2026-06-01 · Difficulty dirs are Capitalized; sidebar config matches casing exactly
