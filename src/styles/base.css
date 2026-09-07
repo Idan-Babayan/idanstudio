@@ -12,4 +12,20 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* No sideways scroll on the Starlight surface. The platform landings' hero glow (PlatformIndex .pi-glow,
+   inset -12% left and -10% right of the hero) is MEANT to spill past its box and fade out beyond the
+   screen edge, and nothing clipped that spill: every landing page scrolled 71px sideways at 1280 and
+   wobbled under a trackpad or a thumb (measured 2026-09-07, present at HEAD before the taxonomy pass).
+   The viewport is the one place a cut is invisible by definition. A clip at the hero or at the content
+   column was measured and rejected: the light wash pools sit at 86% and 95% of the glow box, past the
+   hero's right edge, so either clip slices a pool through its centre and leaves a hard vertical edge.
+   `hidden`, not `clip`: the spec says a root `clip` reaches the viewport as hidden, but Chrome 148
+   computes it on <html> and never propagates it (measured: the page still scrolled 71px), while
+   `hidden` propagates in every engine. Because the value propagates, <html> itself keeps a used value
+   of visible and the viewport stays the only scroll container, so the sticky sidebar, the sticky TOC
+   and the fixed mobile menu are untouched (verified). The marketing pages already do the same with
+   body { overflow-x: hidden } (index.astro, about.astro). */
+html {
+  overflow-x: hidden;
+}
 } /* @layer base */
