@@ -3,11 +3,20 @@
  * PlatformIndex: data + layout for a platform landing page.
  *
  * Takes a `platform` prop, pulls that platform's writeups from the `docs`
- * collection (excluding the index page itself), derives DIFFICULTY from the
- * entry id path ({platform}/{difficulty}/{slug}), sorts easy < medium < hard <
- * misc then title, and renders: a color-coded animated hero, a difficulty
- * filter rail, and a grid of <WriteupCard>. Empty platforms show an "incoming"
- * panel instead of a broken empty grid.
+ * collection (excluding the index page itself), resolves each one's GROUP on the
+ * platform's own axis from the entry id path ({platform}/{group}/{slug}), sorts by
+ * the axis's canonical order then title, and renders: a color-coded animated hero,
+ * a filter rail whose pills carry the per-group counts, and a grid of <WriteupCard>.
+ * Empty platforms show an "incoming" panel instead of a broken empty grid.
+ *
+ * THE AXIS IS PER PLATFORM (src/lib/taxonomy.mjs, 2026-09-07). What a writeup's middle
+ * directory MEANS differs by platform: a difficulty tier on HackTheBox and VulnHub, a
+ * picoCTF category on PicoCTF, a wargame on OverTheWire (mode="wargames", which never
+ * consults the axis). This component used to assume difficulty everywhere and coerce
+ * anything else to a "misc" tier that existed nowhere in the content, which rendered 21
+ * PicoCTF challenges as misc. There is no fallback now: a middle directory outside its
+ * platform's registry fails the build naming the allowed values, and a platform that
+ * renders in writeups mode without an axis fails too, so a fifth platform is a decision.
  *
  * Effects (3D tilt + glare, scroll-reveal stagger, count-up, one-time decode)
  * are ported from src/pages/index.astro so these pages feel identical, not
@@ -15,11 +24,12 @@
  */
 import { getCollection, type CollectionEntry } from 'astro:content';
 import WriteupCard from './WriteupCard.astro';
+import { PLATFORM_AXIS, AXIS_GROUPS } from '../lib/taxonomy.mjs';
 
 interface Props {
 	platform: string;
 	/**
-	 * 'writeups' (default): cards are individual writeup pages, grouped by difficulty.
+	 * 'writeups' (default): cards are individual writeup pages, grouped on the platform's axis.
 	 * 'wargames': cards are the platform's wargames (each sub-hub index page, e.g.
 	 * overthewire/bandit), each linking to its hub. Levels live in the sidebar, never
 	 * listed here, so the landing stays bounded as a wargame's level count grows.
@@ -29,9 +39,32 @@ interface Props {
 const { platform, mode = 'writeups' } = Astro.props;
 const isWargames: boolean = mode === 'wargames';
 
-type Difficulty = 'easy' | 'medium' | 'hard' | 'misc';
-const DIFF_ORDER: readonly Difficulty[] = ['easy', 'medium', 'hard', 'misc'];
-const DIFF_RANK: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2, misc: 3 };
+type AxisKey = 'difficulty' | 'category';
+interface Group {
+	slug: string;
+	label: string;
+	level?: number;
+}
+/** The card's view of a group (mirrors WriteupCard's CardGroup; the level is narrowed there). */
+interface CardGroup {
+	key: AxisKey;
+	slug: string;
+	label: string;
+	level?: 1 | 2 | 3 | 4;
+}
+
+// The axis is dereferenced ONLY in writeups mode: OverTheWire renders in wargames mode and has no
+// entry in the table on purpose.
+const axis: AxisKey | null = isWargames
+	? null
+	: ((PLATFORM_AXIS as Record<string, AxisKey | undefined>)[platform] ?? null);
+if (!isWargames && axis === null) {
+	throw new Error(
+		`PlatformIndex: platform "${platform}" renders in writeups mode but declares no axis in src/lib/taxonomy.mjs. ` +
+			`Add it to PLATFORM_AXIS (difficulty or category) or render it with mode="wargames".`
+	);
+}
+const groups: Group[] = axis === null ? [] : (AXIS_GROUPS as Record<AxisKey, Group[]>)[axis];
 
 interface PlatformMeta {
 	name: string;
@@ -56,16 +89,51 @@ interface CardModel {
 	href: string;
 	title: string;
 	description?: string;
-	difficulty: Difficulty;
+	group: CardGroup;
 	os?: string;
-	tags?: string[];
+	environment?: string;
 }
 
-/** Derive difficulty from the entry id path: {platform}/{difficulty}/{slug}. */
-function difficultyOf(entry: Entry): Difficulty {
+/**
+ * The entry's group on the platform's axis, from the DIRECTORY: {platform}/{group}/{slug}.
+ * The directory is authoritative (as it is for the sidebar and for the injected badge row), so a
+ * card, the rail count and the filter can never disagree. Anything else fails the build.
+ */
+function groupOf(entry: Entry): CardGroup {
 	const parts = entry.id.split('/');
-	const raw = parts.length >= 3 ? parts[1].toLowerCase() : 'misc';
-	return (DIFF_ORDER as readonly string[]).includes(raw) ? (raw as Difficulty) : 'misc';
+	if (parts.length < 3) {
+		throw new Error(
+			`PlatformIndex: "${entry.id}" sits directly under ${platform}/ with no ${axis} directory. ` +
+				`Expected ${platform}/<${axis}>/<slug>, where <${axis}> is one of: ${groups.map((g) => g.slug).join(', ')}.`
+		);
+	}
+	const slug = parts[1];
+	const found = groups.find((g) => g.slug === slug);
+	if (!found) {
+		throw new Error(
+			`PlatformIndex: "${entry.id}" sits under unknown ${axis} directory "${slug}". ` +
+				`Expected one of: ${groups.map((g) => g.slug).join(', ')} (src/lib/taxonomy.mjs). There is no fallback tier.`
+		);
+	}
+	return { key: axis as AxisKey, slug: found.slug, label: found.label, level: found.level as 1 | 2 | 3 | 4 | undefined };
+}
+const rankOf = (slug: string): number => groups.findIndex((g) => g.slug === slug);
+
+/**
+ * Card copy. A PicoCTF description opens "PicoCTF <Title>: ..." because that string is the SEO and
+ * Open Graph description, and it stays exactly as authored; the card, which already shows the title,
+ * does not repeat it. The prefix is matched as the platform name followed by up to eighty non-colon
+ * characters and a colon, NOT as the title itself, because a title can differ from what the
+ * description repeats ("EVEN RSA CAN BE BROKEN???" does not match its own description prefix).
+ * HackTheBox descriptions never match and pass through; wargame cards never call this.
+ */
+function cardDescription(description: string | undefined): string | undefined {
+	if (!description) return description;
+	const escaped = meta.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	const prefix = new RegExp(`^${escaped}\\s+[^:]{1,80}:\\s*`, 'i');
+	const stripped = description.replace(prefix, '');
+	if (stripped === description) return description;
+	return stripped.charAt(0).toUpperCase() + stripped.slice(1);
 }
 
 const all = await getCollection('docs');
@@ -93,40 +161,42 @@ const wargames: WargameModel[] = isWargames
 		.sort((a, b) => a.title.localeCompare(b.title))
 	: [];
 
-// WRITEUP cards (default mode): individual writeup pages, grouped by difficulty. Empty in
+// WRITEUP cards (default mode): individual writeup pages, grouped on the axis. Empty in
 // wargames mode so the per-level pages never render as a card wall.
 const cards: CardModel[] = isWargames
 	? []
 	: entries
-		.map((e): CardModel => {
-			const difficulty = difficultyOf(e);
-			return {
-				// Starlight lowercases doc URLs even though entry ids preserve folder casing
-				// (e.g. id `hackthebox/Easy/busqueda` -> URL /hackthebox/easy/busqueda/).
-				href: `/${e.id.toLowerCase()}/`,
-				title: e.data.title,
-				description: e.data.description,
-				difficulty,
-				os: e.data.os,
-				tags: e.data.tags,
-			};
-		})
+		.map((e): CardModel => ({
+			// Starlight lowercases doc URLs even though entry ids preserve folder casing.
+			href: `/${e.id.toLowerCase()}/`,
+			title: e.data.title,
+			description: cardDescription(e.data.description),
+			group: groupOf(e),
+			os: e.data.os,
+			environment: e.data.environment,
+		}))
 		.sort((a, b) => {
-			const d = DIFF_RANK[a.difficulty] - DIFF_RANK[b.difficulty];
+			const d = rankOf(a.group.slug) - rankOf(b.group.slug);
 			return d !== 0 ? d : a.title.localeCompare(b.title);
 		});
 
 const total: number = isWargames ? wargames.length : cards.length;
 
-// Per-difficulty counts, in canonical order, for the breakdown + filter rail (writeups mode only;
-// cards is empty in wargames mode, so these stay zero and the breakdown / rail self-hide).
-const counts: Record<Difficulty, number> = { easy: 0, medium: 0, hard: 0, misc: 0 };
-for (const c of cards) counts[c.difficulty]++;
-
-const present: Difficulty[] = DIFF_ORDER.filter((d) => counts[d] > 0);
-// A single difficulty group makes the rail pointless; only show it with 2+ (never in wargames mode).
+// Per-group counts in canonical order, for the filter rail (writeups mode only; cards is empty in
+// wargames mode, so `present` stays empty and the rail self-hides).
+const counts = new Map<string, number>();
+for (const c of cards) counts.set(c.group.slug, (counts.get(c.group.slug) ?? 0) + 1);
+const present: Group[] = groups.filter((g) => (counts.get(g.slug) ?? 0) > 0);
+// A single group makes the rail pointless; only show it with 2+ (never in wargames mode).
 const showFilter: boolean = !isWargames && present.length > 1;
 const isEmpty: boolean = total === 0;
+
+// The facts rule: a card fact earns a slot only if it VARIES within the platform. Environment is
+// constant across every PicoCTF card (Standalone), so it says nothing there and is hidden; it
+// varies on HackTheBox (Standalone against Active Directory) and shows. Computed, not declared.
+const showEnv: boolean = new Set(cards.map((c) => c.environment).filter(Boolean)).size > 1;
+
+const countLabel = (n: number): string => (n === 1 ? 'writeup' : 'writeups');
 ---
 
 {/* not-content: Starlight's opt-out for component UI inside docs. Its prose styles
@@ -144,18 +214,21 @@ const isEmpty: boolean = total === 0;
 
 				{!isEmpty && (
 					<div class="pi-stats reveal">
+						{/* The resting HTML holds the FINAL value, so crawlers and
+						    reduced-motion readers see the real number (a no-script visitor sees none of the hero,
+						    which stays at opacity 0 until the reveal script runs, the homepage rule); countUp animates from 0 only when it
+						    runs (the homepage rule). */}
 						<div class="pi-stat">
-							<div class="pi-num" data-count={total}>0</div>
+							<div class="pi-num" data-count={total}>{total}</div>
 							<div class="pi-lbl">{isWargames ? (total === 1 ? 'Wargame' : 'Wargames') : total === 1 ? 'Writeup' : 'Writeups'}</div>
 						</div>
-						{present.length > 0 && (
-							<div class="pi-breakdown">
-								{present.map((d, i) => (
-									<>
-										{i > 0 && <span class="pi-bd-sep" aria-hidden="true">·</span>}
-										<span class={`pi-bd-${d}`}>{counts[d]} {d}</span>
-									</>
-								))}
+						{/* A category-axis platform is a catalog, so its hero carries a second number: how
+						    many categories the writeups span. A difficulty-axis platform keeps one; the two
+						    heroes differ in structure, not in a coat of paint. */}
+						{axis === 'category' && present.length > 0 && (
+							<div class="pi-stat">
+								<div class="pi-num" data-count={present.length}>{present.length}</div>
+								<div class="pi-lbl">{present.length === 1 ? 'Category' : 'Categories'}</div>
 							</div>
 						)}
 					</div>
@@ -177,12 +250,23 @@ const isEmpty: boolean = total === 0;
 		</div>
 	) : (
 		<>
-			{showFilter && (
-				<div class="pi-filters reveal" role="group" aria-label="Filter writeups by difficulty">
-					<button type="button" class="pi-pill is-active" data-filter="all" data-filter-key="difficulty">All</button>
-					{present.map((d) => (
-						<button type="button" class="pi-pill" data-filter={d} data-filter-key="difficulty">{d}</button>
+			{/* The rail is the ONE place the page enumerates its groups: each pill carries its count, so
+			    there is no separate breakdown line in the hero. ALL is neutral (the base --pill, no count:
+			    the hero owns the total); each group pill carries .tx-<slug>, which sets --tx, which the
+			    scoped style reads as --pill. Group pills are independent toggle buttons (aria-pressed; any
+			    number pressed, the filter is the union); ALL is the no-filter state and clears them; the
+			    visually hidden status announces the result. The rail carries the axis as data-filter-key. */}
+			{showFilter && axis !== null && (
+				<div class="pi-filters reveal" role="group" aria-label={`Filter writeups by ${axis}`} data-filter-key={axis}>
+					<button type="button" class="pi-pill is-active" data-filter="all" aria-pressed="true">All</button>
+					{present.map((g) => (
+						<button type="button" class={`pi-pill tx-${g.slug}`} data-filter={g.slug} data-label={g.label} aria-pressed="false">
+							{g.label}
+							<span class="pi-pill-n" aria-hidden="true">{counts.get(g.slug)}</span>
+							<span class="sr-only">{`, ${counts.get(g.slug)} ${countLabel(counts.get(g.slug) ?? 0)}`}</span>
+						</button>
 					))}
+					<span class="pi-filter-status sr-only" aria-live="polite"></span>
 				</div>
 			)}
 
@@ -209,9 +293,10 @@ const isEmpty: boolean = total === 0;
 							title={c.title}
 							description={c.description}
 							platform={platform}
-							difficulty={c.difficulty}
+							group={c.group}
 							os={c.os}
-							tags={c.tags}
+							environment={c.environment}
+							showEnvironment={showEnv}
 						/>
 					))}
 			</div>
@@ -232,6 +317,10 @@ const isEmpty: boolean = total === 0;
 		   pages today but is exactly what a fifth platform would be on the day it is added. Without it
 		   that page's eyebrow would resolve to no colour at all rather than to the accent. */
 		--accent-ink: var(--pf-ink, var(--accent));
+		/* Everything on the landing rings in the platform by default (the wargame card, any control
+		   without a group); the rail pills and the writeup cards override to their own hue below and in
+		   pages.css. Before 2026-09-07 the wargame card fell through to the site default ring. */
+		--focus-ring: var(--accent);
 	}
 
 	/* ── HERO ── */
@@ -354,30 +443,6 @@ const isEmpty: boolean = total === 0;
 		text-transform: uppercase;
 		color: var(--accent-2);
 	}
-	.pi-breakdown {
-		align-self: center;
-		font-family: var(--sl-font-mono);
-		font-size: 0.8rem;
-		letter-spacing: 0.02em;
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.1rem;
-		flex-wrap: wrap;
-	}
-	/* Each segment carries its DIFFICULTY color, so the breakdown adds informative variety
-	   rather than more of the lead hue. Theme-aware, AA on the page background. */
-	.pi-bd-sep {
-		color: color-mix(in oklab, var(--sl-color-text) 38%, transparent);
-		margin: 0 0.4rem;
-	}
-	.pi-bd-easy { color: #4ade80; }
-	.pi-bd-medium { color: #fbbf24; }
-	.pi-bd-hard { color: #f87171; }
-	.pi-bd-misc { color: #94a3b8; }
-	html[data-theme='light'] .pi-bd-easy { color: #15723a; }
-	html[data-theme='light'] .pi-bd-medium { color: #8a5600; }
-	html[data-theme='light'] .pi-bd-hard { color: #b01818; }
-	html[data-theme='light'] .pi-bd-misc { color: #475569; }
 
 	/* ── LOGO ── */
 	.pi-logo-wrap {
@@ -401,7 +466,18 @@ const isEmpty: boolean = total === 0;
 		filter: drop-shadow(0 0 18px color-mix(in oklab, var(--accent) 45%, transparent));
 	}
 
-	/* ── FILTER RAIL ── */
+	/* ── FILTER RAIL ──
+	   Pills wear the VALUE register (Title Case mono 600, the type every chip on the site wears) and
+	   are tinted in the group hue, as the cards are since 2026-09-07: label, border and a 12% fill in
+	   --pill. A group
+	   pill carries the global .tx-<slug> class (components.css), which sets --tx from the difficulty
+	   arc or the category ring; the rule below reads it into --pill. ALL keeps the base neutral (Starlight's gray-2, dark
+	   9.34 and light 7.88 on its own 12% fill) so "no filter" is a control, not a colour, on every
+	   platform. Measured on the fill over the page (model B): every light label 5.1 or better at
+	   rest and, because light keeps the 12% fill when pressed, the same when pressed; dark 5.4 or
+	   better pressed (the arc's Hard, 5.43). The 45% rest border is a decorative boundary (about 2.1:1 on paper): the fill
+	   and the label identify the control, and the pressed state adds weight 700 and a 2px ring plus a soft glow
+	   in the pill's OWN hue. */
 	.pi-filters {
 		display: flex;
 		flex-wrap: wrap;
@@ -409,54 +485,74 @@ const isEmpty: boolean = total === 0;
 		margin: 0 0 1.6rem;
 	}
 	.pi-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
 		font-family: var(--sl-font-mono);
-		font-size: 0.74rem;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		padding: 0.38rem 0.9rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		line-height: 1.4;
+		/* 0.4rem block padding lifts the target to about 30px (WCAG 2.2 asks 24). */
+		padding: 0.4rem 0.9rem;
 		border-radius: 999px;
 		cursor: pointer;
-		line-height: 1.4;
-		/* Mirrors the difficulty badge palette via a single --pill hue. */
 		--pill: var(--sl-color-gray-2);
 		color: var(--pill);
 		border: 1px solid color-mix(in oklab, var(--pill) 45%, transparent);
 		background: color-mix(in oklab, var(--pill) 12%, transparent);
-		transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+		/* The pill rings in its OWN hue (owner decision 2026-09-07): the group hue on a group pill, the
+		   neutral on ALL, the colour its label, border, fill and pressed ring already wear, and the rule
+		   the cards follow. Against the page the arc reads 7.38 or better dark and 6.15 or better light,
+		   the neutral 11.31 and 9.65. */
+		--focus-ring: var(--pill);
+		transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 	}
-	/* The "All" pill is the one pill carrying PLATFORM identity (the rest carry difficulty hues), so
-	   its label reads the ink for the same reason the eyebrow does: 11.84px is body text at 4.5:1.
-	   --pill stays the ACCENT deliberately and is NOT re-declared alongside: it already resolves to
-	   the accent on this element, and it drives the border and fill, which are not text. */
-	.pi-pill[data-filter='all'] { --pill: var(--accent); color: var(--accent-ink); }
-	.pi-pill[data-filter='easy'] { --pill: #16a34a; }
-	.pi-pill[data-filter='medium'] { --pill: #d97706; }
-	.pi-pill[data-filter='hard'] { --pill: #dc2626; }
-	.pi-pill[data-filter='misc'] { --pill: #64748b; }
-	html[data-theme='dark'] .pi-pill[data-filter='easy'] { --pill: #4ade80; }
-	html[data-theme='dark'] .pi-pill[data-filter='medium'] { --pill: #fbbf24; }
-	html[data-theme='dark'] .pi-pill[data-filter='hard'] { --pill: #f87171; }
-	html[data-theme='dark'] .pi-pill[data-filter='misc'] { --pill: #94a3b8; }
+	.pi-pill[class*='tx-'] {
+		--pill: var(--tx);
+	}
+	.pi-pill-n {
+		font-weight: 400;
+		font-variant-numeric: tabular-nums;
+	}
 	.pi-pill:hover {
 		transform: translateY(-1px);
+		border-color: color-mix(in oklab, var(--pill) 70%, transparent);
 	}
-	/* Active pill keeps its own difficulty tint, but the selected INDICATOR is the cyan
-	   secondary (a ring + soft glow) so the current filter stands out regardless of its hue. */
+	/* Pressed: weight 700 and the pill's OWN hue as the selected indicator, a 2px ring flush against the
+	   border plus a soft glow beneath, both in --pill (owner decision 2026-09-07, replacing the cyan
+	   secondary the 2026-06-14 duotone put there: a selected Easy is more Easy, not more cyan, and ALL
+	   rings in its neutral). The border keeps its resting 45% so the ring reads as a ring rather than
+	   thickening the border into a 3px band. Dark also lifts the fill to 22%. The ring is the label's
+	   own colour, so against the pressed fill it carries the label's ratio (dark 5.4 to 7.4 on the 22%
+	   fill, light 5.1 to 7.8, measured with the transition disabled), and against the page it reads
+	   7.4 to 11.6 dark and 6.1 to 9.7 light (the dark floor is the arc's magenta, the Hard tier,
+	   measured on a fixture the same day). */
 	.pi-pill.is-active {
 		font-weight: 700;
 		background: color-mix(in oklab, var(--pill) 22%, transparent);
-		box-shadow: 0 0 0 2px var(--accent-2), 0 6px 18px -8px var(--accent-2);
+		box-shadow: 0 0 0 2px var(--pill), 0 6px 18px -8px var(--pill);
 	}
-	/* LIGHT: the active tint drops to 16%. On paper the label sits on a fill mixed from its OWN hue,
-	   which is the one backdrop no wash change can reach, and at 22% even the darkened ink measured
-	   4.40 against a 4.5 bar. 16% is the cheapest cue to spend, because .is-active signals THREE
-	   ways: weight 700, the 2px cyan ring, and the tint. Narrowing the tint step from 1.83x to 1.33x
-	   over the 12% resting fill leaves the other two intact, where darkening the ink further would
-	   have forked --pf-ink for one element and lightening it to a neutral would have made the one
-	   platform-coloured pill read like a misc chip. Measured after: 4.74 active, 4.97 at rest.
-	   Light only; the dark rule above keeps 22% and dark has no failure here (9.46). */
+	/* LIGHT: the pressed fill stays at the resting 12%. On paper the label sits on a fill mixed from
+	   its OWN hue, the one backdrop no wash change can reach, and the ring values were solved on that
+	   12% fill; the 2026-07-31 pass already found the tint the weakest of the three pressed cues, so
+	   light spends weight and the own-hue ring instead of a tint step. */
 	html[data-theme='light'] .pi-pill.is-active {
-		background: color-mix(in oklab, var(--pill) 16%, transparent);
+		background: color-mix(in oklab, var(--pill) 12%, transparent);
+	}
+	/* Narrow screens: the counts leave the pills so the six-category PicoCTF rail stays two rows. The
+	   visually hidden ", N writeups" inside each pill still carries the number. */
+	@media (max-width: 480px) {
+		.pi-pill-n {
+			display: none;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.pi-pill,
+		.pi-pill:hover {
+			transform: none;
+			transition: none;
+		}
 	}
 
 	/* ── GRID ── */
@@ -531,6 +627,11 @@ const isEmpty: boolean = total === 0;
 		box-shadow: 0 8px 24px -16px rgba(60, 50, 30, 0.45);
 	}
 	.pi-wg-card:hover {
+		border-color: var(--accent);
+	}
+	/* Same fix as WriteupCard: the light base rule outranks the hover rule, so the amber hover border
+	   never showed on paper before 2026-09-07. */
+	html[data-theme='light'] .pi-wg-card:hover {
 		border-color: var(--accent);
 	}
 	.pi-wg-bar {
@@ -629,7 +730,11 @@ const isEmpty: boolean = total === 0;
 		}, 45);
 	}
 
-	/* Count up (cubic ease-out, 1400ms): verbatim from the homepage. */
+	/* Count up (cubic ease-out, 1400ms): ported from the homepage without its synchronous reset to 0
+	   (the resting HTML holds the final value here; data-text / data-suffix stay for parity and have
+	   no producer on this page), including its reduced-motion
+	   gate: the resting HTML already holds the final value, so under reduced motion the number is
+	   simply left (re-set, in case the reveal ran) at its end value and never animates. */
 	function countUp(el: HTMLElement) {
 		const text = el.dataset.text;
 		if (text) {
@@ -638,6 +743,10 @@ const isEmpty: boolean = total === 0;
 		}
 		const end = +(el.dataset.count ?? '0');
 		const suf = el.dataset.suffix ?? '';
+		if (reduce) {
+			el.textContent = String(end) + suf;
+			return;
+		}
 		const dur = 1400;
 		let s: number | null = null;
 		const step = (t: number) => {
@@ -697,24 +806,60 @@ const isEmpty: boolean = total === 0;
 			});
 		});
 
-	/* Filter rail: client-side show/hide. Generic: a pill carries data-filter-key
-	   (the card data-* dimension) + data-filter (the value), so the same code can later
-	   filter by platform or topic. Cards expose data-difficulty / data-platform / data-tags. */
+	/* Filter rail: client-side show/hide, MULTI-SELECT (owner decision 2026-09-07). The rail carries
+	   data-filter-key (the card data-* dimension: difficulty on HackTheBox, category on PicoCTF) and each
+	   group pill data-filter (the value) and data-label (its word), so one script serves both axes. Group
+	   pills are independent toggle buttons: any number may be pressed and a card shows when it matches ANY
+	   pressed value (the union, so Easy plus Medium lists both tiers); pressing a pressed pill releases it.
+	   ALL is the no-filter STATE, not a value: it is pressed exactly when no group pill is, and pressing it
+	   releases every group pill. aria-pressed follows .is-active on every pill and the visually hidden
+	   live region announces the result with the pressed labels. Cards expose data-difficulty or
+	   data-category, plus data-platform / data-tags. */
+	const rail = document.querySelector('.pi-filters') as HTMLElement | null;
+	const filterKey: string = rail?.dataset.filterKey ?? '';
 	const pills = Array.from(document.querySelectorAll('.pi-pill')) as HTMLElement[];
+	const allPill = (pills.find((p) => p.dataset.filter === 'all') ?? null) as HTMLElement | null;
+	const groupPills: HTMLElement[] = pills.filter((p) => p.dataset.filter !== 'all');
 	const cards = Array.from(document.querySelectorAll('.pi-index .wc-card')) as HTMLElement[];
-	function applyFilter(key: string, value: string) {
+	const status = document.querySelector('.pi-filter-status') as HTMLElement | null;
+	function setPressed(p: HTMLElement, on: boolean) {
+		p.classList.toggle('is-active', on);
+		p.setAttribute('aria-pressed', on ? 'true' : 'false');
+	}
+	function applyFilter() {
+		const pressed = groupPills.filter((p) => p.classList.contains('is-active'));
+		const wanted = new Set(pressed.map((p) => p.dataset.filter ?? ''));
+		let shown = 0;
 		cards.forEach((c) => {
-			const raw = c.dataset[key] ?? '';
-			const show = value === 'all' || raw.split(',').map((s) => s.trim()).includes(value);
+			const values = (c.dataset[filterKey] ?? '').split(',').map((s) => s.trim());
+			const show = wanted.size === 0 || values.some((v) => wanted.has(v));
 			c.classList.toggle('wc-hidden', !show);
 			// Guarantee a filtered-in card is visible even if it never scrolled into view.
-			if (show) c.classList.add('in');
+			if (show) {
+				c.classList.add('in');
+				shown++;
+			}
 		});
+		if (allPill) setPressed(allPill, wanted.size === 0);
+		if (status) {
+			const names = pressed.map((p) => p.dataset.label ?? p.dataset.filter ?? '').join(', ');
+			status.textContent =
+				wanted.size === 0 ? `Showing all ${cards.length} writeups` : `Showing ${shown} of ${cards.length} writeups: ${names}`;
+		}
 	}
-	pills.forEach((p) =>
-		p.addEventListener('click', () => {
-			pills.forEach((x) => x.classList.toggle('is-active', x === p));
-			applyFilter(p.dataset.filterKey ?? 'difficulty', p.dataset.filter ?? 'all');
-		})
-	);
+	// No fallback dimension: a rail with no data-filter-key filters nothing, visibly, rather than silently
+	// filtering by difficulty on a category platform.
+	if (filterKey) {
+		groupPills.forEach((p) =>
+			p.addEventListener('click', () => {
+				setPressed(p, !p.classList.contains('is-active'));
+				applyFilter();
+			})
+		);
+		if (allPill)
+			allPill.addEventListener('click', () => {
+				groupPills.forEach((p) => setPressed(p, false));
+				applyFilter();
+			});
+	}
 </script>

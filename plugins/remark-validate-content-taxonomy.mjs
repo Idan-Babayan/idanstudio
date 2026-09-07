@@ -11,7 +11,7 @@
 // only ever sees HAND-AUTHORED markup. Component-generated classes (Callout's `cl-*`, WriteupMeta's
 // `wm-*` / `pf-*`) are produced later during .astro rendering and are never visible here, so there
 // is no way to false-positive on component output. Marketing pages (index.astro, about.astro) are
-// not markdown, so their `platform-card` / `platform-grid` classes are never seen either. Within the
+// not markdown, so nothing they carry is ever seen here either. Within the
 // hand-authored MDX we validate ONLY tokens in the families this guard OWNS (see below) and ignore
 // every other class token (utility classes, class names passed as component props, and so on).
 //
@@ -19,33 +19,37 @@
 // same as remark-inject-passwordreveal) plus Node built-ins. Nothing is added to package.json.
 //
 // SINGLE SOURCE OF TRUTH for validation. When the design taxonomy changes, update the allow-lists
-// below and nowhere else. RETIREMENT NOTE (revised 2026-07-19): WriteupMeta has fully replaced the
-// hand-authored `.machine-meta` badge row, so the `machine-` family is REMOVED. The meta- /
-// platform- / difficulty- / os- families STAY, correcting the earlier expectation that all five
-// would go together: `WriteupCard.astro` still emits `meta-badge`, `difficulty-*`, `os-*` and
-// (behind `showPlatform`) `platform-*` on the platform landing pages, so that CSS is live, and
-// keeping the families here still catches a typo in any badge hand-authored in a future writeup.
+// below and nowhere else. RETIREMENT NOTE (revised 2026-09-07): the whole legacy badge family is
+// RETIRED. `.machine-meta` went on 2026-07-19 when WriteupMeta replaced every hand-authored badge
+// row; the meta- / platform- / difficulty- / os- families outlived it only because
+// `WriteupCard.astro` still emitted them on the platform landing pages. That card now renders its
+// classification through the shared taxonomy vocabulary (.tx-*, a component-emitted class this
+// guard never sees), so no component and no content file emits a legacy badge class any more and
+// their CSS is deleted. The retired prefixes are kept here as a HARD FAIL rather than dropped
+// silently: a hand-authored `meta-badge` span would otherwise render as an unstyled element with a
+// green build, which is the exact failure this guard exists to catch. Only port- and task- remain
+// as live hand-authored families.
 
 import { visit } from 'unist-util-visit';
 
 // --- Owned class-token families: prefix -> the exact allowed full tokens --------------------------
 // A hand-authored class token that STARTS WITH an owned prefix must be one of that prefix's exact
 // tokens, otherwise the build fails. A token that starts with no owned prefix is out of scope and is
-// ignored. Each of meta- / port- / task- maps to a single class, so owning the prefix is
-// airtight. `platform-` is owned strictly: `.platform-card` / `.platform-grid` are marketing-only
-// (.astro) classes that never appear in MDX, so a `platform-*` token here is always a badge modifier.
+// ignored. Each of port- / task- maps to a single class, so owning the prefix is airtight.
 const CLASS_FAMILIES = {
-  'meta-': ['meta-badge'],
-  'platform-': ['platform-hackthebox', 'platform-overthewire', 'platform-picoctf', 'platform-vulnhub'],
-  'difficulty-': ['difficulty-easy', 'difficulty-medium', 'difficulty-hard', 'difficulty-misc'],
-  'os-': ['os-linux', 'os-windows'],
   'port-': ['port-label'],
   'task-': ['task-title'],
 };
 
-// A `meta-badge` element must carry exactly one modifier from one of these families.
-const BADGE_MODIFIER_FAMILIES = ['platform-', 'difficulty-', 'os-'];
-const BADGE_MODIFIERS = new Set(BADGE_MODIFIER_FAMILIES.flatMap((prefix) => CLASS_FAMILIES[prefix]));
+// --- Retired badge families: any hand-authored token starting with one of these fails the build ---
+// Writeup metadata is FRONTMATTER ONLY (os / environment / difficulty), the badge row is injected by
+// plugins/remark-inject-writeupmeta.mjs, and platform and category derive from the directory. The
+// component-emitted classes that replaced these (`wm-*`, `tx-*`, `dpips`) are never hand-authored
+// and are not listed: the guard's boundary is hand-authored markup, and a writeup has no reason to
+// write any of them. `platform-` is owned outright now: the marketing-page classes that used to
+// share the prefix (`platform-card`, `platform-grid`) no longer exist anywhere in src/, so the
+// prefix has no live meaning left to collide with.
+const RETIRED_PREFIXES = ['machine-', 'meta-', 'platform-', 'difficulty-', 'os-'];
 
 // --- Component metadata enums: string prop values authored on component JSX elements ---------------
 // The typed unions the components accept, for components still HAND-AUTHORED in writeup bodies.
@@ -58,8 +62,8 @@ const BADGE_MODIFIERS = new Set(BADGE_MODIFIER_FAMILIES.flatMap((prefix) => CLAS
 // <WriteupMeta> JSX remains in any writeup for this stage to see. That surface is now covered twice
 // over instead: the Zod enums in src/content.config.ts catch a bad frontmatter value with editor
 // support, and the component's own runtime guard still throws on an unknown axis. This is unrelated
-// to the platform- / difficulty- / os- CLASS families above, which stay live because WriteupCard
-// still emits them and a writeup can still hand-author a badge span.
+// to the platform- / difficulty- / os- CLASS families, which are RETIRED (RETIRED_PREFIXES above):
+// nothing emits them any more and a hand-authored token fails the build.
 const COMPONENT_ENUMS = {
   Callout: {
     type: ['recon', 'loot', 'intel', 'defense', 'vuln'],
@@ -138,12 +142,19 @@ export default function remarkValidateContentTaxonomy() {
         if (typeof attr.value !== 'string') continue; // dynamic {expr}: not hand-authored text
 
         const tokens = attr.value.split(/\s+/).filter(Boolean);
-        let hasMetaBadge = false;
-        let badgeModifierCount = 0;
 
         for (const token of tokens) {
-          if (token === 'meta-badge') hasMetaBadge = true;
-          if (BADGE_MODIFIERS.has(token)) badgeModifierCount++;
+          // Retired badge families fail loudly rather than rendering as an unstyled span.
+          const retired = RETIRED_PREFIXES.find((p) => token.startsWith(p));
+          if (retired) {
+            fail(
+              `Retired badge class token "${token}" (the "${retired}" family; .machine-meta retired 2026-07-19, the rest 2026-09-07). ` +
+                `Writeup metadata is frontmatter only: set os / environment / difficulty in frontmatter ` +
+                `and the badge row is injected; platform and category derive from the directory. ` +
+                `See CLAUDE.md "Writeups".`,
+              node,
+            );
+          }
 
           const prefix = ownedPrefixOf(token);
           if (!prefix) continue; // out of scope: unrelated / utility / component class, ignore
@@ -156,22 +167,6 @@ export default function remarkValidateContentTaxonomy() {
               node,
             );
           }
-        }
-
-        // Structural rule: a meta-badge must carry exactly one platform / difficulty / os modifier.
-        if (hasMetaBadge && badgeModifierCount === 0) {
-          fail(
-            `"meta-badge" element has no platform/difficulty/os modifier. Add exactly one of: ` +
-              `${[...BADGE_MODIFIERS].join(', ')}.`,
-            node,
-          );
-        }
-        if (hasMetaBadge && badgeModifierCount > 1) {
-          fail(
-            `"meta-badge" element carries ${badgeModifierCount} family modifiers; it must carry exactly ` +
-              `one (a single platform-, difficulty-, or os- token).`,
-            node,
-          );
         }
       }
 

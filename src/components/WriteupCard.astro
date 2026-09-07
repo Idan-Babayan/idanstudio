@@ -8,26 +8,63 @@
  * are driven by PlatformIndex's script via the data-tilt + .reveal hooks, and the
  * platform accent comes from the global .pf-* token in pages.css.
  *
+ * Anatomy (2026-09-07): ONE meta line above the title, then the title, the description and
+ * the affordance, the same skeleton as the homepage platform cards (a line, a name, a
+ * description, a go). The meta line states the writeup's classification ONCE: its GROUP on
+ * the platform's axis (a difficulty tier on HackTheBox and VulnHub, a picoCTF category on
+ * PicoCTF) as a glyph plus a word, then the facts that vary within the platform (OS, and the
+ * environment when it varies). The card WEARS its group's hue (owner decision 2026-09-07): the
+ * pips or the swatch, the accent bar, the hover border, the cursor glare and the keyboard ring all
+ * read the group's --tx from the difficulty arc or the category ring, every word stays
+ * text-coloured, and the platform accent retreats to the hero, so the grid reads as the axis laid
+ * out as a map and matches the rail. This replaced a cyan uppercase eyebrow plus a row of legacy .meta-badge pills, which
+ * stated the rating twice per card in a palette the writeup row had already left behind.
+ * The pips are the shared DifficultyPips glyph, so the card and the writeup's badge row
+ * render the rating from one markup and one colour.
+ *
  * Matches the homepage card WOW: accent bar, cursor glare, 3D tilt, reveal stagger.
  */
+import DifficultyPips from './badges/DifficultyPips.astro';
 
-type Difficulty = 'easy' | 'medium' | 'hard' | 'misc';
+/**
+ * The writeup's group on its platform's axis, computed by PlatformIndex from the DIRECTORY and
+ * never from frontmatter, so the filter rail (which counts directories) and the card can never
+ * disagree. `slug` is the directory name and doubles as the .tx-<slug> class suffix that maps
+ * it to a hue; `level` is 1 to 4 on the difficulty axis only.
+ */
+interface CardGroup {
+	key: 'difficulty' | 'category';
+	slug: string;
+	label: string;
+	level?: 1 | 2 | 3 | 4;
+}
 
 interface Props {
 	href: string;
 	title: string;
 	description?: string;
 	platform: string;
-	difficulty: Difficulty;
-	/** Optional, frontmatter-driven once the pipeline promotes it. e.g. 'linux' | 'windows'. */
+	group: CardGroup;
+	/** Frontmatter os, e.g. 'Linux' | 'Windows'. Rendered as a neutral fact wherever present. */
 	os?: string;
-	/** Optional topic chips, frontmatter-driven once the pipeline promotes them. */
+	/** Frontmatter environment, e.g. 'Standalone' | 'Active Directory'. */
+	environment?: string;
+	/**
+	 * The facts rule: a fact earns a slot only if it VARIES within the platform, and PlatformIndex
+	 * computes that once for the whole grid. `Standalone` on every PicoCTF card carries no
+	 * information and is hidden; HackTheBox mixes Standalone and Active Directory, so it shows.
+	 */
+	showEnvironment?: boolean;
+	/** Optional topic chips, frontmatter-driven once the pipeline promotes them (parked, see ROADMAP). */
 	tags?: string[];
-	/** Show a platform badge (off per-platform; on for a mixed /writeups grid). */
+	/** Lead the meta line with the platform name (off per-platform; on for a mixed /writeups grid). */
 	showPlatform?: boolean;
 }
 
-const { href, title, description, platform, difficulty, os, tags = [], showPlatform = false } = Astro.props;
+const {
+	href, title, description, platform, group, os, environment,
+	showEnvironment = false, tags = [], showPlatform = false,
+} = Astro.props;
 
 const PLATFORM_LABEL: Record<string, string> = {
 	hackthebox: 'HackTheBox',
@@ -35,50 +72,85 @@ const PLATFORM_LABEL: Record<string, string> = {
 	picoctf: 'PicoCTF',
 	overthewire: 'OverTheWire',
 };
-const DIFF_LABEL: Record<Difficulty, string> = {
-	easy: 'Easy',
-	medium: 'Medium',
-	hard: 'Hard',
-	misc: 'Misc',
-};
-
 const platformLabel: string = PLATFORM_LABEL[platform] ?? platform;
-const diffLabel: string = DIFF_LABEL[difficulty];
 
-const osLower: string = (os ?? '').toLowerCase();
-const hasOs: boolean = osLower.length > 0;
-// Only linux/windows have dedicated badge palettes in components.css; anything else
-// falls back to the neutral .meta-badge base shape rather than mislabelling.
-const osClass: string = osLower === 'windows' ? 'os-windows' : osLower === 'linux' ? 'os-linux' : '';
-const osLabel: string = hasOs ? osLower.charAt(0).toUpperCase() + osLower.slice(1) : '';
+// `astro build` does not type-check .astro props and this repo has no `astro check`, so the shape
+// the filter hook and the glyph depend on is checked here rather than shipped as a card with no
+// data-* attribute, no pips and an accessible name reading "undefined".
+if (!group || (group.key !== 'difficulty' && group.key !== 'category') || !group.slug || !group.label) {
+	throw new Error(`WriteupCard: "${title}" needs a group { key, slug, label }; got ${JSON.stringify(group)}.`);
+}
+if (group.key === 'difficulty' && ![1, 2, 3, 4].includes(group.level as number)) {
+	throw new Error(`WriteupCard: "${title}" is on the difficulty axis but carries no level 1 to 4.`);
+}
 
+const hasOs: boolean = typeof os === 'string' && os.trim().length > 0;
+const hasEnv: boolean = showEnvironment && typeof environment === 'string' && environment.trim().length > 0;
+// Stacking is a PLATFORM decision (see the markup note): keyed on showEnvironment, never on this card's
+// own facts, so every card on the platform shares one skeleton.
+const stacked: boolean = showEnvironment;
 const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && t.trim().length > 0);
+
+// The accessible name is built from the same model the meta line renders, because an aria-label
+// on the anchor REPLACES its content in the accessible-name computation: without this a screen
+// reader would hear only the title and never the rating or the category.
+const facts: string[] = [
+	group.label,
+	...(hasOs ? [os as string] : []),
+	...(hasEnv ? [environment as string] : []),
+];
+const ariaLabel: string = `Read the ${title} writeup: ${facts.join(', ')}`;
+
+// The filter hook. The rail's data-filter-key names this dimension and its data-filter the slug;
+// the dimension is the axis the platform groups by, so exactly one of the two renders.
+const dataAttrs: Record<string, string> =
+	group.key === 'difficulty' ? { 'data-difficulty': group.slug } : { 'data-category': group.slug };
 ---
 
 <a
 	href={href}
-	class={`wc-card pf-${platform} reveal`}
+	class={`wc-card pf-${platform} tx-${group.slug} reveal`}
 	data-tilt
-	data-difficulty={difficulty}
+	{...dataAttrs}
 	data-platform={platform}
 	data-tags={cleanTags.join(',')}
-	aria-label={`Read the ${title} writeup`}
+	aria-label={ariaLabel}
 >
 	<span class="wc-accent-bar"></span>
 	<span class="wc-glare"></span>
 
-	<div class="wc-eyebrow">
-		<span>{diffLabel}</span>
-		{hasOs && <><span class="wc-dot" aria-hidden="true">·</span><span>{osLabel}</span></>}
+	{/* The facts sit inline after the group when there is at most one of them (PicoCTF: the
+	    category, then Linux on the six cards that have an OS) and STACK under the group line when
+	    there are two (HackTheBox: OS and environment), because two facts plus the pips and the
+	    rating overrun the card at the three-column width (measured 282 to 297px against 255px) and
+	    a wrap that lands on some cards and not others shifts their titles out of line. Stacking is
+	    decided per PLATFORM (showEnvironment), never per card, so every card on a platform keeps the
+	    same two-row skeleton even when one writeup omits a fact; only a card with neither fact would
+	    collapse to one row, and no platform has one. */}
+	<div class={`wc-meta${stacked ? ' is-stacked' : ''}`}>
+		{showPlatform && (
+			<>
+				<span class="wc-platform">{platformLabel}</span>
+				<span class="wc-sep" aria-hidden="true">·</span>
+			</>
+		)}
+		<span class={`wc-tx tx-${group.slug}`}>
+			{group.key === 'difficulty'
+				? <DifficultyPips level={group.level as 1 | 2 | 3 | 4} />
+				: <span class="wc-swatch" aria-hidden="true"></span>}
+			<span class="wc-tx-label">{group.label}</span>
+		</span>
+		{(hasOs || hasEnv) && (
+			<span class="wc-facts">
+				{!stacked && <span class="wc-sep" aria-hidden="true">·</span>}
+				{hasOs && <span class="wc-fact">{os}</span>}
+				{hasOs && hasEnv && <span class="wc-sep" aria-hidden="true">·</span>}
+				{hasEnv && <span class="wc-fact">{environment}</span>}
+			</span>
+		)}
 	</div>
 
 	<h3 class="wc-name">{title}</h3>
-
-	<div class="wc-badges">
-		<span class={`meta-badge difficulty-${difficulty}`}>{diffLabel}</span>
-		{hasOs && <span class={`meta-badge ${osClass}`}>{osLabel}</span>}
-		{showPlatform && <span class={`meta-badge platform-${platform}`}>{platformLabel}</span>}
-	</div>
 
 	{cleanTags.length > 0 && (
 		<div class="wc-tags">
@@ -111,10 +183,15 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 		transition: transform 0.12s ease, border-color 0.3s ease;
 		overflow: hidden;
 		will-change: transform;
-		/* Per-platform accent (global .pf-* sets --pf-accent, theme-aware) is the lead, used on
-		   the bar / glare / hover (card identity). The universal cyan secondary is the duotone
-		   partner, used on the small eyebrow + the "Read writeup" affordance. */
-		--accent: var(--pf-accent, var(--sl-color-accent));
+		/* The card wears its GROUP's hue (owner decision 2026-09-07, after a measured study of both
+		   rules): the root carries the global .tx-<slug> class, which sets --tx from the difficulty arc
+		   or the category ring, and that hue leads on the bar, the hover border, the glare and (pages.css)
+		   the focus ring, the same hue as the card's pips or swatch and its rail pill. The platform
+		   accent (.pf-*, --pf-accent) retreats to the hero, the name, the stat, the glow and the
+		   pagination ring, which is what stopped lime saturating HackTheBox. The fallback fires only for
+		   a slug with no .tx-* rule, the same posture as the swatch and the pips. The universal cyan
+		   secondary is the duotone partner, used on the "Read writeup" affordance. */
+		--accent: var(--tx, var(--pf-accent, var(--sl-color-accent)));
 		--accent-2: var(--pf-accent-2, var(--tp-cyan));
 	}
 	/* Light mode: warm paper card with a soft lift so it does not read flat. */
@@ -124,6 +201,12 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 		box-shadow: 0 8px 24px -16px rgba(60, 50, 30, 0.45);
 	}
 	.wc-card:hover {
+		border-color: var(--accent);
+	}
+	/* Light needs its own hover rule: the light base rule above carries an attribute selector and
+	   outranks .wc-card:hover, so the hover border never showed on paper (found 2026-09-07 while
+	   verifying the group-hue chrome; the glare, which has no light override, always worked). */
+	html[data-theme='light'] .wc-card:hover {
 		border-color: var(--accent);
 	}
 
@@ -151,21 +234,64 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 		opacity: 1;
 	}
 
-	.wc-eyebrow {
-		font-family: var(--sl-font-mono);
-		font-size: 0.7rem;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--accent-2);
+	/* ── The meta line: the VALUE register (Title Case mono 600, the same type every chip on the
+	   site wears), one line, wrapping on a narrow card. Hue lives in the glyph only: .wc-tx hands the
+	   group's --tx (set on it by the global .tx-<slug> class, components.css) to the pips through
+	   --pips-c, or paints the swatch with it; the words read the text colour, the facts a muted text
+	   mix (dark 8.60, light 6.73 on their cards), the separators a fainter one (decorative). */
+	.wc-meta {
 		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem 0.45rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		line-height: 1.4;
+		color: var(--sl-color-text);
+	}
+	.wc-tx {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		--pips-c: var(--tx);
+	}
+	.wc-facts {
+		display: inline-flex;
 		align-items: center;
 		gap: 0.45rem;
 	}
-	.wc-dot {
-		opacity: 0.6;
+	/* Two facts stack under the group line (see the markup note): the facts span takes the whole
+	   row, so every card on the platform is two meta rows tall and the titles stay aligned. */
+	.wc-meta.is-stacked .wc-facts {
+		flex-basis: 100%;
+	}
+	/* The nominal glyph: a 9px rounded square in the category hue. Square on purpose, so it can
+	   never read as a sidebar platform dot or as a difficulty pip. Mirrors icons.ts categoryGlyph. */
+	.wc-swatch {
+		width: 9px;
+		height: 9px;
+		border-radius: 2px;
+		/* Same fallback as the pips: a slug with no .tx-* rule still shows a glyph, in the text mix. */
+		background: var(--tx, color-mix(in oklab, var(--sl-color-text) 80%, transparent));
+		flex: none;
+	}
+	.wc-fact {
+		color: color-mix(in oklab, var(--sl-color-text) 72%, transparent);
+	}
+	.wc-sep {
+		color: color-mix(in oklab, var(--sl-color-text) 38%, transparent);
+		font-weight: 400;
+	}
+	/* The mixed-grid platform word reads the platform INK, the text variant of the accent that
+	   clears 4.5:1 at body size on paper (pages.css --pf-ink). On a mixed grid it is the only platform
+	   colour on the card, since the bar wears the group hue. */
+	.wc-platform {
+		color: var(--pf-ink, var(--pf-accent));
 	}
 
-	/* Card title stays neutral (accent is reserved for the bar / eyebrow / go).
+	/* Card title stays neutral (accent is reserved for the bar / hover / go).
 	   The not-content opt-out (see top of block) keeps the prose h3 rule off it. */
 	.wc-name {
 		font-family: var(--tp-display);
@@ -173,16 +299,8 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 		font-size: 1.3rem;
 		line-height: 1.15;
 		color: var(--sl-color-text);
-		margin: 0.7rem 0 0.85rem;
+		margin: 0.7rem 0 0;
 		transform: translateZ(40px);
-	}
-
-	.wc-badges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-		margin: 0;
-		transform: translateZ(20px);
 	}
 
 	.wc-tags {
@@ -203,17 +321,29 @@ const cleanTags: string[] = (tags ?? []).filter((t) => typeof t === 'string' && 
 		background: color-mix(in oklab, var(--accent) 10%, transparent);
 	}
 
+	/* The card is a flex column, so margins do not collapse: the title carries no bottom margin
+	   and this top margin alone sets the title-to-description gap now that no badge row sits
+	   between them. */
 	.wc-desc {
 		color: color-mix(in oklab, var(--sl-color-text) 62%, transparent);
 		font-size: 0.86rem;
 		line-height: 1.55;
-		margin: 0.9rem 0 0;
+		margin: 0.75rem 0 0;
 		transform: translateZ(20px);
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+		transition: color 0.3s ease;
+	}
+	/* Under the cursor glare at its 22% peak the 62% mix measured 4.49 on the dark card and 4.32 on
+	   light under the lime accent, and 4.12 to 5.40 under the group hues (the deep light hues darken
+	   paper a little more than lime did). Lifting the mix to 68% while the glare is up keeps the
+	   description at 4.87 or better in both themes for every hue (computed on the composite); the
+	   title never dropped below 9.9. Colour only, so it needs no reduced-motion gate. */
+	.wc-card:hover .wc-desc {
+		color: color-mix(in oklab, var(--sl-color-text) 68%, transparent);
 	}
 
 	.wc-go {

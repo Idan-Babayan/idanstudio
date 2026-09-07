@@ -3,7 +3,7 @@
 > **Status:** living document. This is the canonical reference for the Idan.Lab project.
 > Update it whenever a durable fact changes. If something here conflicts with a chat,
 > THIS FILE WINS. Volatile work lives in `ROADMAP.md`; rationale lives in `DECISIONS.md`.
-> Last updated: 2026-08-29 (Astro 7 upgrade).
+> Last updated: 2026-09-07 (taxonomy palettes: the platform landings re-based onto the WriteupMeta chip model; difficulty on its own arc).
 
 ---
 
@@ -244,27 +244,29 @@ C:\dev\idanlab\                       # chosen to avoid Hebrew chars in the Wind
 │  │  ├─ AttackPath.astro             # guided infographic for a LINEAR priv-esc chain (ascending escalating path, SVG connectors, Next-step progression, one-time gold flourish); data-driven from a nodes[] prop, scoped styles, not-content. See DECISIONS 2026-07-19
 │  │  ├─ Callout.astro                # icon-based tagged callout (recon/loot/intel/vuln/defense); .cl styles in components.css
 │  │  ├─ Principle.astro              # closing epigraph (aside.principle, prop: text): centered italic mono maxim + dinkus + PRINCIPLE label; no card/border/bg; .principle styles in components.css; HackTheBox writeups only, appended from frontmatter by overrides/MarkdownContent.astro
-│  │  ├─ WriteupCard.astro            # presentational writeup card (props only, reusable for a future /writeups index)
-│  │  ├─ PlatformIndex.astro          # data + hero + difficulty filter + WriteupCard grid; ported homepage effects
+│  │  ├─ WriteupCard.astro            # presentational writeup card (props only, reusable for a future /writeups index): one meta line (group glyph + word, then the facts that vary), title, description, affordance
+│  │  ├─ PlatformIndex.astro          # data + hero + a multi-select filter rail on the platform's own axis (difficulty or category, counts in the pills; axis from src/lib/taxonomy.mjs, an unknown middle directory fails the build) + WriteupCard grid; ported homepage effects
 │  │  ├─ NotFound.astro               # 404 breadcrumb body (nudges to /robots.txt)
 │  │  ├─ SecretTerminal.astro         # from-scratch, zero-dependency vanilla-TS fake terminal
+│  │  ├─ badges/                      # WriteupMeta.astro (the injected chip row), DifficultyPips.astro (the ONE ordinal pips glyph, shared with WriteupCard), icons.ts (icon registry + the category swatch)
 │  │  └─ overrides/
 │  │     ├─ PageSidebar.astro         # additive Starlight override: renders <Default/> then <ToggleAll/> at the bottom of the right TOC
 │  │     ├─ MarkdownContent.astro     # additive Starlight override: renders <Default/> with the <Principle> coda appended inside the content wrapper on HackTheBox writeups that set principle:; the default Footer and its pager follow unchanged
 │  │     └─ Head.astro                # additive Starlight override: renders <Default/> then appends only the social tags Starlight omits (author, og:image + secure_url/type/width/height/alt, twitter:title/description/image), per-page values read from frontmatter (see §2 "Social and SEO metadata")
 │  ├─ lib/
-│  │  └─ ec-priv-command.mjs          # EC plugin: tags command words by category (priv/recon/net/inspect)
+│  │  ├─ ec-priv-command.mjs          # EC plugin: tags command words by category (priv/recon/net/inspect)
+│  │  └─ taxonomy.mjs                 # what a writeup's MIDDLE directory means per platform (difficulty tiers, the six picoCTF categories, PLATFORM_AXIS); dependency-free because Node (plugins/) and Vite (src/) both import it
 │  └─ styles/                         # the theme pass, split into cascade-layer modules (see §5 "The layer contract")
 │     ├─ layers.css                   # the order statement `@layer starlight, tokens, base, prose, chrome, components, pages, utilities;` plus the cascade contract and the unit rule. First customCss entry
 │     ├─ fonts.css                    # self-hosted @font-face (subset WOFF2: Syne, JetBrains Mono, Geist) + metric-matched fallbacks for each; loaded via customCss and imported by the marketing pages. The one module with no layer statement
 │     ├─ tokens.css                   # @layer tokens: every custom property (surfaces, accents, flag gold, OverTheWire amber pair, the prose/chrome type scale). Also owns the prose/chrome type token block (see §6)
-│     ├─ base.css                     # @layer base: the zero-specificity defaults under everything, today the shared focus ring
+│     ├─ base.css                     # @layer base: the zero-specificity defaults under everything, today the shared focus ring alone
 │     ├─ prose.css                    # @layer prose: the reading surface inside .sl-markdown-content (type, rhythm, links, quotes, the raw <details> default)
 │     ├─ chrome.css                   # @layer chrome: header, sidebar, TOC, code frames, scrollbars, the three-column layout, light-mode depth
 │     ├─ components.css               # @layer components: badges, toggles, callouts, FlagCapture, PasswordReveal, Principle, WriteupMeta
-│     ├─ pages.css                    # @layer pages: whole-page treatments (splash hero, platform index, the reveal state rules)
+│     ├─ pages.css                    # @layer pages: whole-page treatments (splash hero, platform index, the reveal state rules, and the landing's sideways-scroll clip: html:has(.pi-index) + body:has(.pi-index), both needed, see §6)
 │     ├─ utilities.css                # @layer utilities: single-purpose helpers that must sit above the named layers, today .sr-only
-│     └─ overrides.css                # THE ONLY UNLAYERED SURFACE. The 14-rule tail, each rule carrying an evidence comment naming what it beats (see §8 "The layer law")
+│     └─ overrides.css                # THE ONLY UNLAYERED SURFACE. The 13-rule tail, each rule carrying an evidence comment naming what it beats (see §8 "The layer law")
 ├─ plugins/
 │  ├─ rehype-content-image-loading.mjs # rehype: sets loading/decoding on content <img> (first eager, rest lazy); wired via astro.config markdown.rehypePlugins
 │  ├─ remark-inject-passwordreveal.mjs # remark: injects the PasswordReveal import (§7 "Build-time plugins")
@@ -387,7 +389,7 @@ is unchanged by construction rather than by exclusion. The tokens live in `token
 ### Focus ring system (keyboard accessibility)
 
 The site's keyboard focus indicator. One token drives every ring COLOR; one shared rule draws every ring.
-The token lives in `tokens.css` and the shared rule is the whole of `base.css`. This is an accessibility
+The token lives in `tokens.css` and the shared rule is the first of the two rules in `base.css` (the other is the viewport clip, see the §4 tree). This is an accessibility
 feature first: it is how a keyboard
 user knows where they are, so it is never removed, only aimed. See DECISIONS 2026-07-13 (the token system)
 and 2026-07-17 (the geometry fixes).
@@ -419,13 +421,16 @@ ring echoes what the element is rather than inventing an identity. Everything el
 
 | Element | `--focus-ring` |
 | --- | --- |
-| `WriteupCard` (`.wc-card`) | `--pf-accent` (its platform color) |
+| `WriteupCard` (`.wc-card`) | `--tx` (its GROUP's hue, the same as its bar, hover border, glare, pips and rail pill; 2026-09-07; `--pf-accent` is the fallback for a slug with no `.tx-*` rule) |
 | The 4 platform sidebar groups | positional `nth-child`, theme-aware (HTB lime, VulnHub red, PicoCTF purple, OTW amber) |
 | `FlagCapture` / `PasswordReveal` | gold `color-mix(--fc-id)` / amber `var(--otw-amber)` (`#ffc23d` dark, `#a86f04` light). A ring is non-text, so it reads the accent, not the ink |
 | `ToggleAll` | `--pf-accent-2` cyan (its own hover identity; set in the component's scoped style) |
 | TOC entries | the hue of the heading they point to: flags `--flag-gold-val`, h3 cyan, h2/h4+ lime |
 | In-prose links | `--tp-cyan` / `--tp-cyan-ink` |
 | `WriteupMeta` chips | `--wm-c` (live: the chips render on every writeup) |
+| Filter rail pills (`.pi-pill`) | `--pill` (its own hue: the group hue, or the neutral on ALL; 2026-09-07) |
+| Landing pagination (`.pagination-links a` on a page carrying `.pi-index`) | `--pf-accent` (the platform, lifted onto the footer container by `:has()` in `pages.css`; writeup pages keep the site default; 2026-09-07) |
+| Anything else inside `.pi-index` (the wargame card) | `--accent` (the platform, set on the landing root; 2026-09-07) |
 
 **Light flag gold is the one contrast carve-out.** The decorative `--flag-gold` (`#C6A243`) rings at only
 2.00:1 on paper, under the 3:1 a non-text indicator needs, so the flag ring reads the AA-grade
@@ -479,9 +484,10 @@ token is an open ROADMAP item, not a bug.
 - Standalone: HUD/nav bar, hero, stats, platform/skill/practice cards, pipeline, contact, footer.
 - Starlight: themed headings (Syne + lime `#` marker), lead blockquote, code frames,
   Toggle, `:::tip` admonition, metadata badges, sidebar dots.
-- Content-embedded (in `src/components/`): `PlatformIndex` (animated hero + difficulty filter rail
-  + writeup-card grid; reuses the homepage effects), `WriteupCard` (presentational, `showPlatform`
-  prop for a future mixed grid), `Callout` (icon-based tagged callout, used in writeup bodies),
+- Content-embedded (in `src/components/`): `PlatformIndex` (animated hero + a multi-select filter rail on the platform's own axis, difficulty or
+  category, with the counts in the pills + writeup-card grid; reuses the homepage effects), `WriteupCard`
+  (presentational: one meta line, title, description, affordance; `showPlatform` prop for a future mixed
+  grid), `badges/DifficultyPips` (the one ordinal pips glyph, shared by the card and the writeup row), `Callout` (icon-based tagged callout, used in writeup bodies),
   `NotFound` (404 body), `SecretTerminal` (vanilla-TS terminal), `AttackPath` (guided infographic for a
   LINEAR privilege-escalation chain: an ascending horizontal path whose nodes escalate toward the goal,
   structural SVG connectors that arrow into the next node with the privilege verb on the segment, a
@@ -516,13 +522,14 @@ token is an open ROADMAP item, not a bug.
   `## Summary`: Forest (6 hops) and Return (5 hops); both keep their BloodHound graph above as evidence. See
   DECISIONS 2026-07-19 (original build + native-fabric rework) and 2026-07-20 (production-polish pass +
   Return instance; edge-mask gutter; production-readiness audit)), `badges/WriteupMeta` (navigational
-  Platform/OS/Environment chip row + trailing hue-free Difficulty pip chip, under a writeup title;
+  Platform / Category (PicoCTF, directory-derived) / OS / Environment chip row + a trailing neutral Difficulty
+  chip whose filled pips take the level hue, under a writeup title;
   each nav chip is coloured via a single `--wm-c` per value, with a restrained glow (halo on dark,
   hue-shadow on light); Difficulty magnitude is filled+growing pips; chips render as non-interactive
   `<span>` today (the commented `<a>` + `data-astro-prefetch="false"` restore verbatim once the filter
   routes ship), `.not-content`; icons live in `badges/icons.ts` on a 14px grid; runtime-validates its
   union props. Colour model, icon sourcing, geometry and the light-mode AA palette are documented
-  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **TWO props are OPTIONAL, `os` and `difficulty`**
+  in the "Badge system (WriteupMeta)" blocks in §6 and §7. **THREE props are OPTIONAL, `os`, `difficulty` and `category`** (the last is PicoCTF-only, forwarded by the injector from the directory)
   (`os?: OS`, `difficulty?: Difficulty`), for the same reason: some content has no honest value on that
   axis, and neither union carries a "not applicable" member, so the chip is omitted rather than invented.
   Omit `difficulty` and no Difficulty chip renders, which is how a progressive wargame with no rating
@@ -586,8 +593,10 @@ token is an open ROADMAP item, not a bug.
 ### Platform palette (canonical, unified 2026-06-01)
 One palette everywhere: HTB **lime**, VulnHub **red**, PicoCTF **purple**, OTW **amber** (used by
 homepage cards, sidebar dots, about-page accents, and writeup badges). The old badge set (blue /
-cyan / violet / orange) is retired. Because HTB lime overlaps Easy green, every `.platform-*` badge
-carries a leading glowing dot so it never reads as a difficulty pill. (See DECISIONS 2026-06-01.)
+cyan / violet / orange) is retired, and so is the legacy `.meta-badge` family it lived in (2026-09-07):
+the landing cards render through the WriteupMeta chip model and the taxonomy palettes (below), which
+contain no green, so the Easy-versus-lime collision that a leading glow dot on the `.platform-*` badges
+once patched no longer exists and the dot is gone with the badge. (See DECISIONS 2026-06-01 and DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.)
 
 ### Platform ink family (`--pf-ink`, 2026-07-31)
 
@@ -604,9 +613,10 @@ body-size type that must clear 4.5:1. Both live in `pages.css` beside each other
 - **The band is 5.75 to 5.76:1**, set by where OverTheWire's existing ink already sat once the hero
   wash moved, so the other three came up to meet amber and amber did not move. OKLCH lightness spread
   0.035, and all four land lighter than the `--wm-c` chip already shipping in the same hue.
-- **Consumers:** `.pi-eyebrow` and the `.pi-pill[data-filter="all"]` label, both inside
-  `PlatformIndex.astro`'s scoped style via a local `--accent-ink` alias. The eyebrow's `::before` rule
-  keeps the ACCENT, because it is a graphic and not text.
+- **Consumers:** `.pi-eyebrow`, inside `PlatformIndex.astro`'s scoped style via a local `--accent-ink`
+  alias, and `WriteupCard`'s `.wc-platform` word on the future mixed grid. The ALL filter pill stopped
+  reading the ink on 2026-09-07: it is a neutral control now (Starlight's gray-2), not a platform-coloured
+  one. The eyebrow's `::before` rule keeps the ACCENT, because it is a graphic and not text.
 - **The wash moved with it.** On light the hero glow pools the platform's own accent over the surface
   its own text reads on, so the pool was relocated from 20% to 86% x (cyan 80% to 95%), behind the
   platform mark rather than the type. That recovered 0.75 to 1.11 of contrast at FULL wash strength.
@@ -614,7 +624,8 @@ body-size type that must clear 4.5:1. Both live in `pages.css` beside each other
   paper ceilings are 4.11 and 4.16, under the bar even with the wash entirely off.
 
 ### Badge system (WriteupMeta): colour model + light-mode AA palette
-The `WriteupMeta` chip row (Platform / OS / Environment nav chips + a hue-free Difficulty chip) is
+The `WriteupMeta` chip row (Platform / Category on PicoCTF / OS / Environment nav chips + a neutral
+Difficulty chip whose FILLED pips take the level hue, see "Taxonomy palettes" below) is
 driven by ONE custom property per chip value, `--wm-c`. That single token drives the chip's label,
 its monochrome icon (via `currentColor`), border (38%), fill (`color-mix(--wm-c 15%, transparent)`,
 i.e. 15% identity over 85% surface), glow, and focus ring. There is deliberately NO separate text/ink
@@ -661,6 +672,133 @@ token (unlike `--flag-gold` / `--flag-gold-val`): everything `--wm-c` paints wan
   three times as passing at 4.86. All four now read a per-platform `--pf-ink` at 5.75 to 5.76. See the
   "Platform ink family" block below and DECISIONS 2026-07-31.
 
+### Taxonomy palettes: a four-step difficulty arc and a six-hue category ring (2026-09-07)
+
+The colour a writeup's CLASSIFICATION wears on the platform landings and the writeup row. What a
+writeup's middle directory means is declared once, per platform, in `src/lib/taxonomy.mjs`
+(`PLATFORM_AXIS`: HackTheBox and VulnHub group by DIFFICULTY tier `easy | medium | hard | insane`,
+PicoCTF by the six official CATEGORIES in sidebar order; OverTheWire renders in wargames mode and has
+no axis). `PlatformIndex` groups by that axis and THROWS on an unknown middle directory, on a writeup
+with no middle directory, and on a writeups-mode platform with no axis: there is no `misc` fallback
+anywhere. The injector derives PicoCTF's `category` from the directory exactly as it derives platform
+(never a frontmatter field) and cross-checks HackTheBox and VulnHub `difficulty` against the tier
+directory, so the card (directory) and the writeup row (frontmatter) can never disagree. Reasoning:
+DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model
+(the first cut had both vocabularies read one ring; the owner's review the same day gave difficulty
+its own arc).
+
+- **Two palettes in `tokens.css`** (`@layer tokens`, dark on `:root`, light under
+  `:root[data-theme='light']`). The DIFFICULTY ARC, `--tier-easy` `#86cdff` / `#045077` (sky),
+  `--tier-medium` `#bf9bfc` / `#683f9f` (violet), `--tier-hard` `#f070be` / `#96216f` (magenta),
+  `--tier-insane` `#ff8d65` / `#973100` (orange): four hues on one short arc of the wheel (240, 300,
+  345, 40) with temperature and saturation rising with the rating, the sunset-gradient reading that
+  carries a progression without a single-hue ramp and without the traffic light's green, yellow or red
+  seats (the yellow seat is taken on this site in both themes: gold on dark, the gold value ink and the
+  Linux chip on light). The CATEGORY RING, `--tx-blue` `#6ec4ff` / `#045077`, `--tx-teal` `#54d5ab` /
+  `#02553f`, `--tx-orange` `#e57f4f` / `#8c3d12`, `--tx-rose` `#fa96c3` / `#88375f`, `--tx-coral`
+  `#fe8b83` / `#832323`, `--tx-violet` `#adb3ff` / `#4c4d99`, read by PicoCTF's categories only.
+  Ring dark values sit at OKLCH L 0.79 (orange 0.70 and coral 0.76, a lightness axis against the Linux
+  chip and against each other), arc dark values at L 0.82 down to 0.72 with chroma 0.10 up to 0.18,
+  both at about half a platform accent's chroma; light values are solved by the badge-pass method (hold
+  hue, drop lightness, clamp chroma, never shift hue) so a 12px/600 label clears 5.1:1 on a 12% same-hue
+  fill over paper, which keeps the per-pixel floor under the light dot grid above 4.5, and the arc's
+  Easy keeps the ring's blue seat, the one already solved against the cyan ink. Measured on the built
+  pages by canvas readback (model B, the composite): light pill labels 5.1 to 6.3 on their own fill over
+  paper, dark 6.5 to 9.6 at rest and 5.4 to 7.4 pressed (the 22% fill; light keeps 12%, so its pressed
+  figures are its resting ones); pips and swatches 6.8 to 11.0 on the card; the own-hue pressed ring
+  carries its label's ratio against the pressed fill (dark 5.4 to 7.4 on the 22% fill, light 5.1 to 7.8)
+  and reads 7.4 to 11.6 dark and 6.1 to 9.7 light against the page (the dark floor is the arc's magenta,
+  the Hard tier, measured on a Hard fixture). Pressed states were measured with the pill transition
+  disabled: in a hidden browser pane transitions do not advance, so a readback taken mid-transition
+  reports the resting values.
+- **Neither palette contains a reserved hue:** no lime (HackTheBox, the site accent), no cyan (the
+  secondary), no purple (PicoCTF; the arc's violet is h300, 0.109 dark and 0.086 light from the PicoCTF
+  sidebar dot, the only purple a HackTheBox page shows), no red (VulnHub; the arc's orange is 0.097
+  dark and 0.119 light from its dot), and no gold or amber at all, because gold is the flag-loot signal
+  and amber the OverTheWire identity. Every hue sits at least dEOK 0.065 (the Linux/OverTheWire floor)
+  from every chip and accent it can meet on a page; the arc's tightest seats are Insane against the
+  Linux chip (0.069 dark, 0.090 light), Easy against Standalone (0.071 light) and Medium against the
+  Active Directory chip (0.077 light, 0.092 dark), and its adjacent steps sit 0.133 to 0.158 apart on
+  dark and 0.123 to 0.147 on light. Four kinships are recorded and deliberately unfixed because the pairs
+  never share a page: ring teal against the Progressive chip (0.016 dark; Progressive renders on
+  OverTheWire rows only), ring violet against the Active Directory chip (0.033; AD renders on HackTheBox
+  rows only, ring violet on PicoCTF), ring orange against the light OverTheWire ink (0.057; ring orange
+  is Reverse Engineering, which has no writeup), and the arc's orange against the ring's (0.061; Insane
+  on machine pages, Reverse Engineering on PicoCTF).
+- **Two vocabularies, ten classes in `components.css`** (`.tx-easy` `--tier-easy`, `.tx-medium`
+  `--tier-medium`, `.tx-hard` `--tier-hard`, `.tx-insane` `--tier-insane`; `.tx-general-skills` teal,
+  `.tx-cryptography` violet, `.tx-web-exploitation` blue, `.tx-forensics` coral, `.tx-reverse-engineering`
+  orange, `.tx-binary-exploitation` rose), each setting `--tx`; consumers read `var(--tx)` and never a
+  token, so a hue moves in one place and a slug's hue in one other. Difficulty is ORDINAL (the arc reads
+  cold to hot; the pips carry the order for anyone who cannot read hue), categories are NOMINAL. The two
+  palettes never share a page and share no hex except Easy's light seat; the GLYPH still separates the
+  axes wherever a mixed grid would put them together: round pips for a rating, a square 9px swatch for a
+  category (square so it can never read as a sidebar platform dot).
+- **Where hue is spent (the rule).** The filter rail pills and the cards are the tinted surfaces. A pill: label, border
+  (45%, a decorative boundary at about 2.1:1 on paper, the fill and the label identify the control) and
+  a 12% fill in `--tx`; pressed adds weight 700 and a 2px ring plus a soft glow in the pill's own hue (owner decision
+  2026-09-07; the cyan secondary no longer appears on the rail), and dark also lifts
+  the fill to 22% while light keeps 12%. A card WEARS its group's hue (owner decision 2026-09-07, after
+  a measured study of both rules on both platforms): the card root carries `.tx-<slug>`, so its accent
+  bar, hover border, cursor glare and keyboard ring read the group hue along with its pips or swatch,
+  every word stays text-coloured, and the platform accent retreats to the hero, the name, the stat, the
+  glow and the footer pagination's focus ring; the grid reads as the axis laid out as a map and matches
+  the rail, and OverTheWire's wargame card, which has no group, keeps the platform. Under the glare peak
+  the description lifts from a 62% to a 68% text mix (4.87 or better in both themes for every hue; the
+  lime rule had measured 4.49 dark and 4.32 light there). On the writeup row a category chip is a normal `--wm-c` chip in `--tx`; the
+  Difficulty chip stays a neutral box whose FILLED pips take `--tx` (owner decision 2026-09-07, partly
+  superseding the achromatic pips of 2026-07-10). ALL is neutral (Starlight's gray-2, dark 9.34 and
+  light 7.88 on its own fill) and carries no count: the hero owns the total.
+- **One glyph, one enumeration.** `badges/DifficultyPips.astro` is the only pips markup; the card and
+  the writeup row both render it and `components.css` paints it (`.dpips`): filled pips read `--pips-c`
+  (fallback the neutral text mix), unfilled pips are a 1px ring in the same colour so the "N of 4"
+  denominator is visible on paper (the old `--sl-color-gray-5` disc read about 1.3:1 there); the growth
+  per level is unchanged. The hero breakdown line is gone: the rail pills carry the counts, so a page
+  enumerates its groups exactly once. A category-axis platform's hero carries a second stat, the number
+  of present categories, so the two heroes differ in structure rather than in a coat of paint.
+- **The card meta line and the facts rule.** `WriteupCard` renders ONE meta line above the title: the
+  group (glyph + Title Case word), then the facts that VARY within the platform (`showEnv = new
+  Set(environments).size > 1`, computed once in `PlatformIndex`; OS renders wherever present). Two facts
+  STACK under the group line (every HackTheBox card: the rating line, then `Linux · Standalone`) and one
+  sits inline (PicoCTF: `Web Exploitation · Linux`; Standalone is constant across all 21 cards and hidden),
+  so the titles on a platform stay aligned (two facts plus pips measured 282 to 297px against 255px of
+  card at the three-column width). The card's `aria-label` is built from the same model (`Read the
+  Busqueda writeup: Easy, Linux, Standalone`), because an aria-label replaces the anchor's content in
+  the accessible name. `data-difficulty` / `data-category` come from the directory group, never from
+  frontmatter.
+- **Card copy.** In writeups mode `PlatformIndex` strips a leading `<PlatformName> <up to 80 non-colon
+  characters>: ` from the card blurb and capitalises the first character of what follows, so a PicoCTF card does not repeat its
+  own title; the frontmatter description (the SEO and Open Graph string) is untouched, HackTheBox never
+  matches, and the OverTheWire wargame card reads its description verbatim.
+- **Capitalisation law, three tiers.** A `//`-prefixed UPPERCASE tracked mono line is a KICKER that
+  opens a section (hero eyebrow, wargame card eyebrow); UPPERCASE tracked mono without the prefix is a
+  SLOT LABEL (`WRITEUPS`, `CATEGORIES`); Title Case JetBrains Mono 0.75rem 600 is a VALUE or a CONTROL
+  (rail pills, card meta, every chip); sentence case is prose and affordances. Lowercase chrome does
+  not exist (the breakdown was its only instance, and it printed the raw directory slug).
+- **The rail is accessible by construction, and MULTI-SELECT (owner decision 2026-09-07):** the group
+  pills are independent `<button aria-pressed>` toggles synced with `.is-active`; any number may be
+  pressed and a card shows when it matches ANY pressed value (Easy plus Medium lists both tiers), pressing
+  a pressed pill releases it, and ALL is the no-filter state rather than a value, pressed exactly when no
+  group pill is and clearing them all when pressed. The rail carries `data-filter-key` (the axis), each
+  group pill `data-filter` and `data-label` plus a visually hidden `, N writeups`, and a `.sr-only`
+  `aria-live="polite"` status announces `Showing N of M writeups: <pressed labels>` (or `Showing all M
+  writeups`) after every change, `--focus-ring: var(--pill)` rings each pill in its OWN hue (the group's
+  on a group pill, the neutral on ALL), the hover lift is gated under `prefers-reduced-motion`, the stat numbers
+  rest at their final value in the HTML and count up only when motion is allowed (the homepage rule),
+  and below 480px the visible counts leave the pills so the six-category PicoCTF rail stays two rows.
+
+**No sideways scroll on a landing (2026-09-07).** The hero glow (`.pi-glow`, inset `-12%` left and `-10%`
+right of the hero) is MEANT to spill past its box, and it is the only element on the site that overflows
+the viewport: 71px at 1280, 45px at 640. It is clipped by a PAIR of rules in `pages.css`,
+`html:has(.pi-index)` and `body:has(.pi-index)`, both `overflow-x: clip`. **Both are required and either
+one alone does nothing**, because overflow propagates to the viewport from the root, and from body only
+while the root is `visible`, and the box whose value propagates keeps a used value of `visible` and so
+clips nothing itself. `clip` and not `hidden`: `hidden` coerces the paired `overflow-y` to `auto` and
+makes the box a scroll container, which on body would put every sticky descendant in a scrollport that
+never scrolls. Scoped with `:has()`, so no writeup page is in either selector. A script can scroll a
+clipped box either way, so this is tested with a real wheel gesture and never with `scrollTo`. See
+DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+
 ### Light-mode identity (paper-native "risograph")
 Light is art-directed on its own terms (dark is unchanged). All rules scoped to
 `[data-theme='light']`, spread across the modules by concern (surfaces in `tokens.css`, chrome in
@@ -684,9 +822,12 @@ stay aligned). Width trimmed via `--sl-sidebar-width: 17rem` (from Starlight's 1
 ### Platform-index duotone
 On the platform index each platform reads as its color (lead) plus a universal cyan secondary
 (`--pf-accent-2`: `#41efff` dark, `#08697a` light): hero glow is a platform+cyan duotone, the stat
-label + card eyebrow + "Read writeup" affordance are cyan, the count-up number + accent bar stay
-the platform color, the stat breakdown segments are colored by difficulty, and the filter active
-pill uses a cyan ring.
+label + "Read writeup" affordance are cyan, the count-up number stays
+the platform color, the card's accent bar wears the card's group hue (2026-09-07), and the pressed filter pill rings in its OWN hue (owner decision 2026-09-07, replacing the cyan ring
+the duotone put there; cyan keeps the stat label and the affordance only). The difficulty-coloured hero
+breakdown and the cyan card eyebrow are gone (2026-09-07): enumeration lives in the rail pills, which
+are tinted by the difficulty arc or the category ring as the cards' bars, borders, glares and rings are (2026-09-07), and the card's meta line is text-coloured with its glyph in hue
+(see "Taxonomy palettes" above).
 
 ### Code-block command highlighting (by category, OKLCH palette)
 `ec-priv-command.mjs` tags command words by semantic category, colored in `overrides.css` (theme-aware,
@@ -855,10 +996,12 @@ Preserves reading position: anchors on the current heading and corrects scroll s
      lowercase: the sidebar `autogenerate.directory` is case-sensitive (e.g. `hackthebox/easy`) and must
      match the on-disk lowercase dir; a case-only rename needs `git mv` on Windows
      (`core.ignorecase=true`). **What the middle tier MEANS is per platform**, and this is load bearing:
-     HackTheBox and VulnHub group by DIFFICULTY (`easy`/`medium`/`hard`/`misc`), OverTheWire by WARGAME
-     (`bandit`), PicoCTF by CATEGORY (`binary-exploitation`, and the other five below). `PlatformIndex`
-     currently assumes difficulty for all of them, which is why every PicoCTF card renders as `misc`
-     today; the fix is a committed ROADMAP item, not a defect in the content shape.
+     HackTheBox and VulnHub group by DIFFICULTY (`easy`/`medium`/`hard`/`insane`), OverTheWire by WARGAME
+     (`bandit`), PicoCTF by CATEGORY (`binary-exploitation`, and the other five below). `src/lib/taxonomy.mjs`
+     declares that axis per platform (2026-09-07); `PlatformIndex` groups by it and the injector validates
+     it, so an unknown middle directory, a HackTheBox or VulnHub `difficulty` that disagrees with its tier
+     directory, or a `difficulty` on PicoCTF or OverTheWire fails the build. There is no `misc` tier and no
+     fallback.
    - Copy + rename screenshots into `src/assets/{platform}/{difficulty}/{slug}/`, then reference them
      from the writeup by a relative Markdown path (`../../../../assets/...`) so astro:assets optimizes
      + hashes them.
@@ -876,20 +1019,27 @@ removes. `gfm`, `smartypants` and `remarkRehype` are deliberately not passed: `u
 unset option back to the shared top-level value and all three already sit at their defaults.
 
 - **`remark-inject-writeupmeta.mjs`** injects the `<WriteupMeta />` row and its import. Gated on the
-  writeup path, so nothing outside one can be injected. It also FAILS the build on a `principle`
-  outside a HackTheBox writeup, or an empty one: it is the one pass that sees both path and
-  frontmatter, which Zod cannot. Behavior detail in the MDX conventions below.
+  writeup path, so nothing outside one can be injected. It also owns every rule that needs the path AND
+  the frontmatter, because it is the one pass that sees both, which Zod cannot: the `principle` scope
+  guard (a `principle` outside a HackTheBox writeup, or an empty one, fails the build) and, since
+  2026-09-07, the per-platform AXIS rules from `src/lib/taxonomy.mjs`: on PicoCTF the middle directory
+  must be one of the six categories and is forwarded as `category` (a frontmatter `category:` key
+  fails), on HackTheBox and VulnHub `difficulty` is required and must equal the tier directory, and a
+  `difficulty` on PicoCTF or OverTheWire fails. Behavior detail in the MDX conventions below.
 - **`remark-inject-passwordreveal.mjs`** injects the `PasswordReveal` import, only into files that use
   the tag and do not already import it.
 - **`remark-transform-recon-rail.mjs`** converts the recon findings list into the rail. It emits `dt`
   and `dd` as SIBLINGS with no per-row wrapper, because both must be direct grid children (a wrapper
   would need subgrid, which blockifies inline `<code>` onto its own track).
-- **`remark-validate-content-taxonomy.mjs`** FAILS the build on an unknown hand-authored badge or
-  metadata class token (`meta-badge`, `platform-*`, `difficulty-*`, `os-*`, `port-label`, `task-title`)
-  or an unknown component metadata value (`Callout` type, `FlagCapture` type `user|root`), with a "did
-  you mean" suggestion. **Its allow-lists are the single source of truth**, and it is the deliberate
-  alternative to `astro check`. It does not validate frontmatter: strict Zod enums in
-  `content.config.ts` do that. See DECISIONS 2026-07-12 and 2026-07-20.
+- **`remark-validate-content-taxonomy.mjs`** FAILS the build on an unknown hand-authored class token in
+  the two live families (`port-label`, `task-title`), on ANY hand-authored token in a retired badge family
+  (`machine-`, `meta-`, `platform-`, `difficulty-`, `os-`: retired 2026-09-07 when the landing card moved
+  to the taxonomy vocabulary and the legacy CSS was deleted, so a retired token would otherwise render
+  as an unstyled span with a green build), or on an unknown component metadata value (`Callout` type,
+  `FlagCapture` type `user|root`), with a "did you mean" suggestion where a family is live. **Its
+  allow-lists are the single source of truth**, and it is the deliberate alternative to `astro check`. It
+  does not validate frontmatter: strict Zod enums in `content.config.ts` do that, and the path-dependent
+  rules live in the injector. See DECISIONS 2026-07-12 and 2026-07-20.
 
 **The guard structurally cannot see an underscore-prefixed file.** Astro silently excludes
 `_name.mdx` from a content collection, so such a file never enters the pipeline and no remark plugin
@@ -912,12 +1062,14 @@ underscore.
   Absolute /public image paths are not used for writeup content images.
 - Frontmatter `title`/`description` + `import Toggle from '@components/Toggle.astro'`.
 - **Metadata is FRONTMATTER ONLY.** Declare `environment`, plus `os` (where the challenge genuinely has a
-  target operating system) and `difficulty` (where the content has a rating), and write nothing in the
-  body: the badge row and its import are injected by
-  `plugins/remark-inject-writeupmeta.mjs`. Never author a `<WriteupMeta />` tag or import it. `platform` is
-  NOT a frontmatter field, it is derived from the writeup's directory. Omit `difficulty` for a progressive
-  wargame (Bandit) and no chip renders. Set `badges: false` (unquoted boolean, never `no` or `off`) to opt a
-  writeup-path page out entirely. The description is still repeated as a `>` blockquote lead.
+  target operating system) and `difficulty` (where the content has a rating: REQUIRED on HackTheBox and
+  VulnHub, where it must equal the tier directory the file sits in, and FORBIDDEN on PicoCTF and
+  OverTheWire, all build-guarded since 2026-09-07), and write nothing in the body: the badge row and its
+  import are injected by `plugins/remark-inject-writeupmeta.mjs`. Never author a `<WriteupMeta />` tag or
+  import it. `platform` is NOT a frontmatter field, it is derived from the writeup's directory, and so is a
+  PicoCTF writeup's `category` (a `category:` key fails the build). Set `badges: false` (unquoted boolean,
+  never `no` or `off`) to opt a writeup-path page out entirely; the axis rules still run. The description
+  is still repeated as a `>` blockquote lead.
   - **Writeup path** is a non-`index` `.mdx` file under one of the four platform directories
     (`hackthebox`, `vulnhub`, `picoctf`, `overthewire`). Hub and landing pages are authored as `index.*`
     files and are therefore exempt. A file outside a writeup path is never injected, even when it carries
@@ -990,7 +1142,8 @@ than the challenge is worse than one without it. Reference file:
 - **Route:** `picoctf/<category>/<challenge-slug>.mdx`. The middle tier is the official picoCTF CATEGORY,
   and there are exactly SIX: `general-skills`, `cryptography`, `web-exploitation`, `forensics`,
   `reverse-engineering`, `binary-exploitation`. Assets mirror at
-  `src/assets/picoctf/<category>/<slug>/`, four `../` from the writeup.
+  `src/assets/picoctf/<category>/<slug>/`, four `../` from the writeup. The writeup row's category chip and the landing card's category are
+  derived from this directory (injector and `PlatformIndex`); nothing is declared in frontmatter.
 - **Sidebar:** each category is a NAMED collapsed group in `astro.config.mjs`, never an autogenerate over
   the whole platform. Two reasons, both observed: an autogenerated group is labelled with the raw
   lowercase directory name (`binary-exploitation`, not `Binary Exploitation`), and the platform's own
@@ -1000,7 +1153,7 @@ than the challenge is worse than one without it. Reference file:
   Within a category, autogenerate's alphabetical order stands and no page carries a `sidebar.order`:
   these challenges are standalone, not sequential.
 - **Frontmatter:** `title`, `description`, `environment: Standalone`, and `os` ONLY where the challenge
-  genuinely involves one. **NO `difficulty`,** deliberately: picoCTF scores in points, which run from 1
+  genuinely involves one. **NO `difficulty`,** deliberately (and build-guarded since 2026-09-07: the injector fails on one): picoCTF scores in points, which run from 1
   (DISKO 1) to 200 (EVEN RSA), are set per edition, and span 2019 to 2025, so a 50-point 2021 challenge
   and a 50-point 2025 one are not comparable and no honest mapping onto Easy through Insane exists. The
   chip simply does not render, exactly as on Bandit. **NO `principle`:** it is HackTheBox-only and the
@@ -1144,28 +1297,32 @@ than the challenge is worse than one without it. Reference file:
   the following line. Prefer one image that carries the technique over several that narrate it.
 
 ### Badge / tag system (canonical colors in `components.css`)
-- Platform (badges): htb lime, vulnhub red, picoctf purple, overthewire amber (each with a
-  leading glow dot; canonical palette, see §6).
-- Difficulty: easy green, medium amber, hard red, misc slate.
-- OS: linux slate, windows blue.
-- Topic `.tag-*`: web orange, crypto teal, forensics amber, reversing pink, pentest green, etc.
-- **`.machine-meta` RETIRED 2026-07-19; the REST of the family is LIVE.** No writeup hand-authors a badge
-  row any more (WriteupMeta replaced the last of them, the 34 Bandit pages), so the `.machine-meta`
-  container rule is deleted from the theme pass and its `machine-` family from the taxonomy guard. For the
-  same reason the guard no longer validates WriteupMeta component props (retired 2026-07-20 with the
-  injection migration): those values are validated by the strict Zod enums in `content.config.ts` and by the
-  component's own runtime guard. Nothing
-  else went with it: `WriteupCard.astro` emits `meta-badge`, `difficulty-*`, `os-*` and (behind
-  `showPlatform`) `platform-*`, and `PlatformIndex` renders those cards on every `{platform}/index.mdx`,
-  so those rules are live on all four landing pages. `platform-*` renders 0 times today but is the
-  `showPlatform` path reserved for the planned `/writeups` index, so it is wired, not dead. Measured in
-  `dist`: `meta-badge` 6, `difficulty-*` 3, `os-*` 3, `machine-meta` 0. See DECISIONS 2026-07-19.
+- Platform: the canonical `--pf-accent` per platform on the writeup row (`WriteupMeta`, `--wm-c`); the
+  landing card carries its platform as the accent bar, hover border and focus ring, never as a badge (the
+  `showPlatform` word on a future mixed grid reads `--pf-ink`).
+- Difficulty: a neutral chip (word + pips) on the writeup row and pips + word on the card, both from
+  `badges/DifficultyPips.astro`; the FILLED pips take the level hue from the difficulty arc (Easy sky,
+  Medium violet, Hard magenta, Insane orange: cold to hot along one arc of the wheel). The filter rail pills are the one tinted difficulty surface.
+- Category (PicoCTF): a `--wm-c` chip with the square swatch on the writeup row, swatch + word on the
+  card, a tinted pill on the rail, all from the ring (General Skills teal, Cryptography violet, Web
+  Exploitation blue, Forensics coral, Reverse Engineering orange, Binary Exploitation rose). See §6
+  "Taxonomy palettes".
+- OS / Environment: identity colours on the writeup row (`--wm-c`); neutral text facts on the card.
+- Topic tags: parked (ROADMAP). No `.tag-*` rules exist in `src/styles/` and none should be resurrected;
+  a future tag chip reuses the ring model.
+- **The legacy `.meta-badge` / `.platform-*` / `.difficulty-*` / `.os-*` family is RETIRED 2026-09-07.**
+  It survived the 2026-07-19 retirement of `.machine-meta` only because `WriteupCard` still emitted it on
+  the landing pages (the 2026-07-19 correction). That emitter moved to the taxonomy vocabulary, `dist`
+  was measured at zero anchored tokens first (anchor on a quote or whitespace: `\bos-linux\b` also
+  matches `wm-os-linux`), the whole block was deleted from `components.css`, and the taxonomy guard now
+  hard-fails any hand-authored token in those families. The 2026-06-01 glow dot went with it: the ring
+  neither palette contains green, so a platform badge can no longer read as Easy. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
 - **Frontmatter metadata (updated 2026-07-20):** `content.config.ts` extends `docsSchema` with strict
   optional enums for `os` (`Linux | Windows`), `environment` and `difficulty`, plus an optional `badges`
   boolean, `tags`, and `principle` (HackTheBox-only, guarded at the remark stage; see §7). Since the
   injection migration every writeup sets `environment`, and every writeup with a target operating system
-  sets `os`, so `WriteupCard`'s OS chip has a value wherever one exists and self-hides where one does not
-  (it still only maps linux/windows, which is exactly what the enum permits; `head-dump` is the first
+  sets `os`, so `WriteupCard`'s OS fact has a value wherever one exists and is omitted where one does not
+  (the card renders the enum value as text and maps it to no class; `head-dump` is the first
   writeup to omit `os`, see the WriteupMeta entry in §6). `tags` stays deliberately
   unused until writeup volume makes a tag filter earn its place (see ROADMAP).
 
@@ -1179,7 +1336,9 @@ icon.
 - **Monochrome marks** (HackTheBox, Windows, Active Directory, Progressive, Standalone): inlined via `?raw`
   + `set:html` and tinted from `--wm-c` (`currentColor`) in both themes. Sourced only from
   `src/assets/icons/` (inlining requires importing, and `public/` is not in the import graph); Standalone is
-  authored inline in `icons.ts` (no file). HackTheBox is a platform LOGO but is monochrome (one path, one
+  authored inline in `icons.ts` (no file), and so is the PicoCTF category chip's swatch (`categoryGlyph`, 2026-09-07):
+  one 9px rounded square, currentColor, `aria-hidden`, deliberately smaller than the 14px pictogram ink
+  because it is a colour sample and not a picture. HackTheBox is a platform LOGO but is monochrome (one path, one
   fill), so it lives here, not with the `<img>` logos.
 - **Geometry: a 14px grid.** Every glyph's larger ink dimension renders at ~14px in the 15px `.wm-ico` box,
   measured by rasterizing each glyph alone and taking its ALPHA bounding box (not path data). Only HackTheBox
@@ -1194,9 +1353,11 @@ icon.
 - **Accessibility:** every inline glyph carries `aria-hidden="true"`, so each chip's accessible name is
   exactly its text label. A build-time `inline()` normalizer in `icons.ts` strips comments, inter-element
   whitespace and the XML prolog from inlined glyphs (an `<?xml?>` prolog becomes a bogus comment node in an
-  HTML document), keeping chip `textContent` clean. `active-directory.svg`'s `<metadata>` creator credit
-  (Amido Limited / Richard Slater, upstream CC0-1.0) is KEPT: it does not enter the accessibility tree, and a
-  comment is not a safe home for it (the normalizer strips comments).
+  HTML document), keeping chip `textContent` clean. `active-directory.svg`'s creator credit (Amido Limited /
+  Richard Slater, upstream CC0-1.0) ships as a `data-credit` attribute on the svg root (2026-09-07). It used
+  to be a `<metadata>` block, which is text content: it sat in the chip's `textContent` and in the Pagefind
+  body of every Active Directory page. An attribute survives the normalizer (which strips comments, never
+  attributes) and is neither text nor an accessible name.
 - `assetsInlineLimit` stays at the Vite default (size-based inline-vs-hashed split for the `<img>` assets).
 
 ## 8. Conventions & Non-Negotiables
@@ -1404,7 +1565,13 @@ whole records.
 - Any third-party analytics beacon, including a manual Cloudflare install: rejected. See DECISIONS 2026-07-06 · Cloudflare Web Analytics disabled; CSP stays script-src 'self' (no third-party beacon).
 - A script as the content-pipeline mechanism, including `notion_cleaner.py`: rejected. See DECISIONS 2026-07-11 · Content pipeline is manual editorial polish, not a script (retires notion_cleaner.py).
 - `astro check`, and the `@astrojs/check` plus `typescript` dependencies it needs: rejected. See DECISIONS 2026-07-12 · Build-time content-taxonomy guard (remark plugin) as the ruled-out astro check alternative.
-- Deleting the `platform-*` badge rules as unused: rejected. See DECISIONS 2026-07-19 · `.machine-meta` deleted; the REST of the badge family is not dead (corrects the entry below).
+- Deleting the `platform-*` badge rules WHILE `WriteupCard` still emitted them: rejected (2026-07-19), and the rejection stands as a rule about live emitters. Its premise ended 2026-09-07 when the card moved to the taxonomy vocabulary, and the whole legacy badge family was then deleted with `dist` measured at zero tokens first. See DECISIONS 2026-07-19 · `.machine-meta` deleted; the REST of the badge family is not dead (corrects the entry below), and DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- A `misc` fallback tier in `PlatformIndex` for an unknown middle directory: rejected, the build fails naming the allowed directories. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- Gold or amber as a difficulty or category hue: rejected, gold is the flag-loot signal and amber the OverTheWire identity. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- One shared ring for difficulty and the categories: rejected on the owner's review the same day (2026-09-07). A rating wore a category's hue, and four hues spread around the wheel read as labels rather than as a scale; difficulty now reads its own four-step arc (`--tier-*`, sky, violet, magenta, orange, cold to hot) and the ring is PicoCTF-only. Single-hue ramps, a yellow or amber seat (the flag gold and the Linux chip own it in both themes) and HackTheBox's own green, yellow, red, purple scale were measured and rejected on the way. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- The platform accent as the landing card's lead colour (bar, hover border, glare, focus ring): replaced on the owner's review (2026-09-07) by the card's group hue, after a measured study of both rules on both platforms; the platform keeps the hero, the name, the stat, the glow, the wargame card and the footer pagination ring. A bar-only half measure was measured and rejected: the card snapped from its group to the platform on hover. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- Platform colour on the ALL filter pill: rejected, ALL is a neutral control. See DECISIONS 2026-09-07 · Two taxonomy palettes: the landing pages re-base onto the WriteupMeta chip model.
+- `html { overflow-x: hidden }` (or `clip`) ALONE to stop the landing's sideways scroll: shipped once and measured to do nothing at all, because the root's value propagates to the viewport and the root then clips nothing itself. A rule on `body` alone fails identically while the root is `visible`. It takes the pair, and `clip` rather than `hidden` so body never becomes a scroll container. §6 "No sideways scroll on a landing" carries the readings. Do not re-try the single rule.
 - Grading all 34 Bandit levels, and giving `difficulty` a fallback value: rejected. See DECISIONS 2026-07-19 · WriteupMeta difficulty becomes optional; Bandit's 34 pages migrate off `.machine-meta` (retiring it site-wide).
 - `platform` as a frontmatter field with a missing-key guard: rejected. See DECISIONS 2026-07-20 · WriteupMeta is injected from frontmatter, platform is derived from the directory.
 - Grid on the recon markdown list, and the `<Findings>` / `<Finding>` component pair: rejected. See DECISIONS 2026-07-27 · The recon rail, in three attempts: grid on the list, two components, then a remark transform.

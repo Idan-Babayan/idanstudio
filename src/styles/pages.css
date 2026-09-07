@@ -44,15 +44,29 @@ html[data-theme="light"] .hero h1 {
 /* Per-platform accent token, theme-aware. Any index element tagged .pf-{platform}
    (the PlatformIndex root and every WriteupCard) inherits it, so a future mixed
    /writeups grid colors each card with no extra wiring. Darkened variants on paper
-   keep contrast (aligned with the .platform-* badge inks). */
-.pf-hackthebox  { --pf-accent: #b6ff3c; }
-.pf-vulnhub     { --pf-accent: #ff5c5c; }
-.pf-picoctf     { --pf-accent: #d96bff; }
-.pf-overthewire { --pf-accent: #ffc23d; }
-:root[data-theme='light'] .pf-hackthebox  { --pf-accent: #4d7c0f; }
-:root[data-theme='light'] .pf-vulnhub     { --pf-accent: #d12f2f; }
-:root[data-theme='light'] .pf-picoctf     { --pf-accent: #8b3dc4; }
-:root[data-theme='light'] .pf-overthewire { --pf-accent: #a86f04; }
+   keep contrast (the same darkened family the WriteupMeta platform chips read; the
+   legacy .platform-* badge inks this note used to cite were retired with that family). */
+/* The second selector of each pair lifts the platform onto the landing's prev/next pagination
+   container, which sits in Starlight's footer OUTSIDE the .pi-index subtree and so inherits nothing
+   from it. :has() keys it on the landing root's own .pf-* class, so a page with no .pi-index (every
+   writeup) matches nothing, and the sidebar is never in the selector. It exists for the focus ring
+   rule after the ink block (2026-09-07). */
+.pf-hackthebox,
+body:has(.pi-index.pf-hackthebox)  .pagination-links { --pf-accent: #b6ff3c; }
+.pf-vulnhub,
+body:has(.pi-index.pf-vulnhub)     .pagination-links { --pf-accent: #ff5c5c; }
+.pf-picoctf,
+body:has(.pi-index.pf-picoctf)     .pagination-links { --pf-accent: #d96bff; }
+.pf-overthewire,
+body:has(.pi-index.pf-overthewire) .pagination-links { --pf-accent: #ffc23d; }
+:root[data-theme='light'] .pf-hackthebox,
+:root[data-theme='light'] body:has(.pi-index.pf-hackthebox)  .pagination-links { --pf-accent: #4d7c0f; }
+:root[data-theme='light'] .pf-vulnhub,
+:root[data-theme='light'] body:has(.pi-index.pf-vulnhub)     .pagination-links { --pf-accent: #d12f2f; }
+:root[data-theme='light'] .pf-picoctf,
+:root[data-theme='light'] body:has(.pi-index.pf-picoctf)     .pagination-links { --pf-accent: #8b3dc4; }
+:root[data-theme='light'] .pf-overthewire,
+:root[data-theme='light'] body:has(.pi-index.pf-overthewire) .pagination-links { --pf-accent: #a86f04; }
 
 /* Per-platform TEXT INK, the accent/ink split the OverTheWire amber already established
    (--otw-amber / --otw-amber-ink, see tokens.css). The accent is consumed by large display type
@@ -85,14 +99,45 @@ html[data-theme="light"] .hero h1 {
 :root[data-theme='light'] .pf-vulnhub     { --pf-ink: #b60115; }  /* 4.16 -> 5.76, oklch(0.489 0.198  26.48) */
 :root[data-theme='light'] .pf-picoctf     { --pf-ink: #7f30b7; }  /* 4.86 -> 5.75, oklch(0.490 0.202 307.02) */
 :root[data-theme='light'] .pf-overthewire { --pf-ink: var(--otw-amber-ink); }  /* 5.76, unchanged */
+
+/* The landing's prev/next links ring in the platform (owner decision 2026-09-07): the :has() pairs
+   above put --pf-accent on that container on landing pages only. A ring is non-text (3:1) and every
+   platform accent clears it on the page: dark 6.59 (VulnHub) to 16.49 (HackTheBox); light 4.11 lime,
+   4.16 red, 4.86 purple, 3.50 amber, and 3.71 / 3.76 / 4.38 / 3.16 under a dot of the light grid.
+   Writeup pages carry no .pi-index and keep the site default ring. */
+body:has(.pi-index) .pagination-links { --focus-ring: var(--pf-accent); }
+
+/* No sideways scroll on a landing. The hero glow (.pi-glow, inset -12% left and -10% right of the
+   hero) is MEANT to spill past its box and fade out beyond the screen edge, and nothing clipped that
+   spill. Measured on the built pages: it is the ONLY element overflowing the viewport, by 71px at
+   1280 and 45px at 640, so every landing wobbled sideways under a trackpad or a thumb.
+   IT TAKES BOTH RULES. A rule on either box ALONE measures as doing nothing at all. Overflow
+   propagates to the viewport from the ROOT, and from BODY only while the root is `visible`, and the
+   box whose value propagates keeps a used value of `visible`, so it clips nothing itself. On <html>
+   alone the value therefore leaves for the viewport and no box clips: scrollWidth stayed 1341
+   against a 1270 viewport and a real wheel gesture still moved the page the full 71px, reading
+   identically to the rule being deleted. On body alone, with the root left `visible`, the value
+   propagates from body for the same reason and measures the same 1341 and 71px. Together the root's
+   value stops body from propagating, body's own box becomes the one that clips, and scrollWidth
+   drops to exactly the viewport width with the page unscrollable sideways.
+   `clip` rather than `hidden` on both: `hidden` coerces the paired `overflow-y` to `auto` and makes
+   the box a scroll container, which on body would put every sticky descendant in a scrollport that
+   never scrolls. `clip` leaves `overflow-y: visible` and creates no scroll container. The fixed
+   sidebar and header are unaffected either way, since the viewport is their containing block.
+   Scoped with :has() to pages that carry a landing, so no writeup page is in either selector. The
+   marketing pages solve the same problem on their own body rule, which is why these four were the
+   only pages that ever showed it. */
+html:has(.pi-index) { overflow-x: clip; }
+body:has(.pi-index) { overflow-x: clip; }
 } /* @layer pages */
 
-/* Focus ring: platform cards ring in their platform identity (echoes the accent bar + hover border).
-   Each card is <a class="wc-card pf-*"> and already carries --pf-accent from the .pf-* token above, so
-   the shared :where(a,...):focus-visible rule draws a platform-colored ring. (The homepage's marketing
-   cards are a separate surface, folded into the same token in a later pass.) */
+/* Focus ring: a landing card rings in its GROUP's hue (owner decision 2026-09-07), the same hue as its
+   bar, hover border, glare, pips and rail pill: the card root carries .tx-<slug>, which sets --tx, and
+   the shared :where(a,...):focus-visible rule draws the ring. Against the page the arc and the ring
+   read 7.38 or better dark and 6.15 or better light. The platform accent is the fallback for a slug
+   with no .tx-* rule. (The homepage's marketing cards are a separate surface.) */
 @layer pages {
-.wc-card { --focus-ring: var(--pf-accent); }
+.wc-card { --focus-ring: var(--tx, var(--pf-accent)); }
 
 /* Scroll-reveal infra (shared by hero + cards; the component script toggles .in).
    Same easing as index.astro / about.astro so the motion feels identical. */

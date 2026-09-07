@@ -50,6 +50,93 @@ html[data-theme="dark"] {
 :root[data-theme='light'] { --pf-accent-2: var(--tp-cyan-ink); }
 } /* @layer tokens */
 
+/* ── Taxonomy palettes: a four-step difficulty ARC and a six-hue category RING ──
+   The colours a writeup's classification wears on the platform landings and the writeup row. Two
+   palettes, one per vocabulary (owner decision 2026-09-07, after a first cut had both vocabularies
+   read one shared ring and the four difficulty hues, spread around the wheel, read as labels rather
+   than as a scale).
+
+   THE DIFFICULTY ARC (--tier-*, HackTheBox and VulnHub, ORDINAL): sky, violet, magenta, orange, four
+   hues on one short arc of the wheel (240, 300, 345, 40) with temperature rising in one direction, the
+   sunset-gradient reading (blue, purple, pink, orange) that reads as cold to hot without a single-hue
+   ramp and without the traffic light's green, yellow or red seats (the yellow seat is taken on this
+   site in both themes: gold on dark, the gold value ink and the Linux chip on light). Saturation climbs
+   with the rating too, so Insane is the loudest step, and the pips carry the order for anyone who
+   cannot read hue. Dark values sit at OKLCH L 0.82 down to 0.72 with chroma 0.10 up to 0.18; light
+   values are solved by the badge-pass method below, except Easy, which keeps the ring's blue seat (the
+   one already solved against the light cyan ink). Adjacent steps sit dEOK 0.133 to 0.158 apart on dark
+   and 0.123 to 0.147 on light; every step sits at least 0.069 from every chip and accent it can meet on
+   a HackTheBox page (the tightest: Insane against the Linux chip on dark, 0.069; Easy against the
+   Standalone chip on light, 0.071; Medium against the Active Directory chip on light, 0.077) and at
+   least 0.086 from the sidebar dots.
+
+   THE CATEGORY RING (--tx-*, PicoCTF, NOMINAL): blue, teal, orange, rose, coral, violet, unchanged from
+   the first cut. The six categories read all six; nothing else reads them now. The value classes that
+   map a slug to `--tx` live in components.css (.tx-*); nothing reads a token directly.
+
+   NEITHER PALETTE CONTAINS A RESERVED HUE, by construction and measured in OKLCH against every chip
+   and accent each hue can meet: no lime (HackTheBox and the site accent, so a rating can never read
+   as the platform again, which is the collision the 2026-06-01 glow dot was patching), no cyan (the
+   universal secondary), no purple (PicoCTF; the arc's violet is h300, 0.109 dark and 0.086 light from
+   the PicoCTF sidebar dot, the only purple a HackTheBox page shows), no red (VulnHub; the arc's orange
+   is 0.097 dark and 0.119 light from its dot), and no gold or amber at all: gold is the flag-loot
+   signal (--flag-gold) and amber is the OverTheWire identity, and neither may name a rating or a
+   category. The Linux chip's Tux amber (h60) is the warm neighbour, which is why both oranges sit at
+   h40 to h45 with their own lightness, and why coral, the warm category, is at h25.
+
+   RING dark values sit at OKLCH L 0.79 (orange 0.70, coral 0.76 for the lightness axis above) and
+   chroma 0.11 to 0.14, about half a platform accent's, so a category reads as a label on a purple page
+   and never as a rival identity. LIGHT values, both palettes, are solved by the badge-pass method (hold
+   the hue, drop the lightness, let chroma gamut-clamp, never shift the hue) so a 12px/600 label clears
+   5.1:1 on a 12% same-hue fill over paper #ece9e0, which keeps the per-pixel floor under the light dot
+   grid (chrome.css body::before, 2px dots at 6% on a 22px pitch) above 4.5. Every figure below is
+   model B (sRGB alpha compositing of the fill over the named backdrop, the instrument that reproduces
+   this file's recorded numbers) and names its composite; the model C floor follows. The ring's blue
+   and teal are deepened past the solver (L 0.41 and 0.40) to add a lightness axis against the light
+   cyan ink and the light lime ink respectively, the Linux/OverTheWire precedent.
+
+   Recorded kinships, deliberately unfixed because the pairs never share a page: ring teal against the
+   Progressive chip (dEOK 0.016 dark; Progressive renders on OverTheWire rows only), ring violet against
+   the Active Directory chip (0.033; AD renders on HackTheBox rows only, ring violet on PicoCTF), ring
+   orange against the light OverTheWire ink (0.057; ring orange is Reverse Engineering, which has no
+   writeup, and never meets the amber), and the arc's orange against the ring's (0.061; Insane on
+   machine pages, Reverse Engineering on PicoCTF). Measured on the writeup row's category chip (a 15%
+   fill, not the pill's 12%): ring violet reads 4.90 on its fill with a 4.48 per-pixel floor under a
+   dot, coral 6.00 and 5.48, the same regime as every July chip on that row (4.37 to 4.48 under a dot).
+   The arc, measured on Hard and Insane fixtures on 2026-09-07: dark pill labels 6.46 to 9.55 at rest
+   and 5.43 to 7.44 pressed, light 5.18 to 5.92 on the 12% fill with floors 4.71 to 5.37, rings on the
+   page 7.38 to 11.58 dark and 6.18 to 7.15 light, pips on the card 7.02 to 11.01 dark and 6.87 to 7.96
+   light, and under the card glare 3.86 to 6.05 dark and 5.19 to 6.01 light, every one above its bar. */
+@layer tokens {
+:root,
+:root[data-theme='dark'] {
+  --tx-blue:   #6ec4ff;  /* oklch(0.79 0.12 240)  8.76 on its 12% fill over #07090a, 6.95 on 22% */
+  --tx-teal:   #54d5ab;  /* oklch(0.79 0.13 168)  9.09 / 7.16 */
+  --tx-orange: #e57f4f;  /* oklch(0.70 0.14  45)  6.24 / 5.26; L 0.70 keeps it off the Tux amber (dEOK 0.111) */
+  --tx-rose:   #fa96c3;  /* oklch(0.79 0.13 352)  8.23 / 6.62 */
+  --tx-coral:  #fe8b83;  /* oklch(0.76 0.14  25)  7.52 / 6.16 */
+  --tx-violet: #adb3ff;  /* oklch(0.79 0.11 280)  8.49 / 6.76 */
+  /* Difficulty arc, ordinal: sky, violet, magenta, orange, cold to hot along one arc of the wheel. */
+  --tier-easy:   #86cdff;  /* oklch(0.82 0.10 240)  9.55 on its 12% fill over #07090a, 7.44 on 22%; 0.097 from the cyan secondary */
+  --tier-medium: #bf9bfc;  /* oklch(0.76 0.14 300)  7.54 / 6.15; 0.092 from the Active Directory chip */
+  --tier-hard:   #f070be;  /* oklch(0.72 0.18 345)  6.46 / 5.43; 0.110 from the PicoCTF sidebar dot */
+  --tier-insane: #ff8d65;  /* oklch(0.76 0.15  40)  7.54 / 6.17; 0.069 from the Linux chip, the arc's tightest seat */
+}
+:root[data-theme='light'] {
+  --tx-blue:   #045077;  /* oklch(0.41 0.09 240)  5.95 on its 12% fill over paper #ece9e0, floor 5.39; deepened for the cyan ink (dEOK 0.080) */
+  --tx-teal:   #02553f;  /* oklch(0.40 0.08 168)  6.02, floor 5.46; deepened for the lime ink (dEOK 0.095) */
+  --tx-orange: #8c3d12;  /* oklch(0.46 0.12  45)  5.16, floor 4.68 */
+  --tx-rose:   #88375f;  /* oklch(0.46 0.12 352)  5.25, floor 4.76 */
+  --tx-coral:  #832323;  /* oklch(0.41 0.13  25)  6.35, floor 5.76; L 0.41 keeps it off the Linux chip (dEOK 0.077) */
+  --tx-violet: #4c4d99;  /* oklch(0.46 0.12 280)  5.13, floor 4.65 */
+  /* Difficulty arc, light: solved as above; Easy keeps the ring's blue seat (the cyan-ink solve). */
+  --tier-easy:   #045077;  /* oklch(0.41 0.09 240)  5.92 on its 12% fill over paper, floor 5.37; 0.08 from the cyan ink, 0.071 from Standalone */
+  --tier-medium: #683f9f;  /* oklch(0.465 0.15 300)  5.18, floor 4.71; 0.077 from the Active Directory chip */
+  --tier-hard:   #96216f;  /* oklch(0.465 0.17 345)  5.20, floor 4.73; one step past the solver so the canvas readback (about 0.05 under the model) clears 5.1 */
+  --tier-insane: #973100;  /* oklch(0.46 0.145  40)  5.21, floor 4.73; same step past the solver; 0.090 from the Linux chip */
+}
+} /* @layer tokens */
+
 /* ══════════════════════════════════════════════
    THEME PASS: align the writeups with the homepage /
    about "Decrypted" aesthetic.
