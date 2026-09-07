@@ -1,8 +1,10 @@
 ---
 import {
-  platformLogos, platformIcons, osLogos, osIcons, environmentIcons, platformSlug, difficultyLevel,
+  platformLogos, platformIcons, osLogos, osIcons, environmentIcons, categoryGlyph, platformSlug, difficultyLevel,
   type Platform, type OS, type Environment, type Difficulty,
 } from './icons';
+import DifficultyPips from './DifficultyPips.astro';
+import { findGroup } from '../../lib/taxonomy.mjs';
 
 interface Props {
   platform: Platform;
@@ -17,8 +19,14 @@ interface Props {
   // has no honest "none" member, so the axis is omitted rather than invented. Omit it and the
   // Difficulty chip does not render at all; supply it and nothing changes.
   difficulty?: Difficulty;
+  // OPTIONAL (2026-09-07), PicoCTF in practice. The writeup's picoCTF category as the SLUG of its
+  // middle directory (picoctf/<category>/<slug>.mdx), derived and forwarded by the injector exactly
+  // as platform is, and never a frontmatter field (a frontmatter `category:` fails the build in the
+  // injector). Validated below against src/lib/taxonomy.mjs, so an unknown directory fails here as
+  // well. Omit it and no chip renders, which is every writeup outside picoctf/.
+  category?: string;
 }
-const { platform, os, environment, difficulty } = Astro.props;
+const { platform, os, environment, difficulty, category } = Astro.props;
 
 const platformClass: Record<Platform, string> = {
   HackTheBox: 'pf-htb', VulnHub: 'pf-vh', PicoCTF: 'pf-pico', OverTheWire: 'pf-otw',
@@ -51,7 +59,29 @@ for (const [name, value, registries] of axes) {
   }
 }
 
-const level = difficulty === undefined ? undefined : difficultyLevel[difficulty];
+// Category is validated against the taxonomy registry rather than an icon registry: it has ONE shared
+// glyph (categoryGlyph) and its identity is the slug's hue on the ring (.tx-<slug>, components.css),
+// so the registry that knows the six slugs is the one to check. Same posture as the loop above: an
+// absent value is a deliberate omission, a present one must be a real category directory.
+const categoryGroup = category === undefined ? undefined : findGroup('category', category);
+if (category !== undefined && categoryGroup === undefined) {
+  throw new Error(
+    `WriteupMeta: unknown category "${category}". Expected one of the picoCTF category directory names in src/lib/taxonomy.mjs.`
+  );
+}
+const categoryLabel: string | undefined = categoryGroup === undefined ? undefined : (categoryGroup.label as string);
+
+const level = difficulty === undefined ? undefined : (difficultyLevel[difficulty] as 1 | 2 | 3 | 4);
+// The difficulty chip carries .tx-<level> so the shared glyph can read the level's hue; the slug is the
+// tier directory name, which is the lowercase enum value, resolved through the taxonomy registry so a
+// renamed tier fails here instead of silently losing its hue (the same posture as category above).
+const diffGroup = difficulty === undefined ? undefined : findGroup('difficulty', difficulty.toLowerCase());
+if (difficulty !== undefined && diffGroup === undefined) {
+  throw new Error(
+    `WriteupMeta: difficulty "${difficulty}" has no tier in src/lib/taxonomy.mjs (its lowercase form must be a DIFFICULTY_TIERS slug).`
+  );
+}
+const diffSlug = diffGroup === undefined ? undefined : (diffGroup.slug as string);
 const osSlug = os === undefined ? undefined : os.toLowerCase();
 const envSlug = environment.toLowerCase().replace(/\s+/g, '-');
 // Per-value classes so CSS can color each chip (the slugs double as the class suffixes):
@@ -76,13 +106,18 @@ const envClass = `wm-env-${envSlug}`; // wm-env-standalone | wm-env-active-direc
   <div class="wm-nav">
     {/* Metadata chips are intentionally non-interactive until the /platform, /os and /environment
         filter routes ship, to be revisited after the mass writeup import. The clickable <a> version
-        is kept here (commented) so it restores verbatim: swap the three static <span class="wm-chip">
+        is kept here (commented) so it restores verbatim: swap the static <span class="wm-chip">
         below back to these anchors once the routes exist, and drop the data-astro-prefetch="false"
-        attrs then (they exist only to stop Starlight prefetching dead routes).
+        attrs then (they exist only to stop Starlight prefetching dead routes). The category anchor
+        points at the platform landing's rail rather than a filter route, since the landing already
+        filters by category client-side.
     <a class={`wm-chip ${platformClass[platform]}`} href={`/platform/${platformSlug[platform]}`} data-astro-prefetch="false">
       {platform === 'HackTheBox'
         ? <span class="wm-ico" set:html={platformIcons.HackTheBox} />
         : <img class="wm-ico wm-ico-logo" src={platformLogos[platform]} alt="" width="15" height="15" loading="lazy" decoding="async" />}{platform}
+    </a>
+    <a class={`wm-chip wm-cat tx-${category}`} href={`/picoctf/#${category}`} data-astro-prefetch="false">
+      <span class="wm-ico wm-ico-cat" set:html={categoryGlyph} />{categoryLabel}
     </a>
     <a class={`wm-chip ${osClass}`} href={`/os/${osSlug}`} data-astro-prefetch="false">
       {os === 'Linux'
@@ -98,6 +133,11 @@ const envClass = `wm-env-${envSlug}`; // wm-env-standalone | wm-env-active-direc
         ? <span class="wm-ico" set:html={platformIcons.HackTheBox} />
         : <img class="wm-ico wm-ico-logo" src={platformLogos[platform]} alt="" width="15" height="15" loading="lazy" decoding="async" />}{platform}
     </span>
+    {categoryLabel !== undefined && (
+      <span class={`wm-chip wm-cat tx-${category}`}>
+        <span class="wm-ico wm-ico-cat" set:html={categoryGlyph} />{categoryLabel}
+      </span>
+    )}
     {os !== undefined && (
       <span class={`wm-chip ${osClass}`}>
         {os === 'Linux'
@@ -109,14 +149,11 @@ const envClass = `wm-env-${envSlug}`; // wm-env-standalone | wm-env-active-direc
       <span class="wm-ico wm-ico-env" set:html={environmentIcons[environment]} />{environment}
     </span>
   </div>
-  {difficulty !== undefined && (
+  {difficulty !== undefined && level !== undefined && (
     <span class="wm-diff">
-      <span class="wm-diff-chip">
+      <span class={`wm-diff-chip tx-${diffSlug}`}>
         {difficulty}
-        <span class="wm-pips" data-level={level} aria-hidden="true">
-          <i></i><i></i><i></i><i></i>
-        </span>
-        <span class="sr-only">{`Difficulty ${level} of 4`}</span>
+        <DifficultyPips level={level} />
       </span>
     </span>
   )}

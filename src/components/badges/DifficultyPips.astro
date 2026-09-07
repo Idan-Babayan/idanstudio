@@ -1,0 +1,33 @@
+---
+/**
+ * DifficultyPips: the ONE ordinal difficulty glyph on the site.
+ *
+ * Four discs, the first `level` of them filled, the trailing filled one grown a step so a higher
+ * rating visibly outweighs a lower one beyond count alone. Extracted from WriteupMeta so the writeup
+ * row and the landing card render the same glyph from the same markup; the geometry lives in
+ * src/styles/components.css (.dpips, components layer), not here, because two components paint it.
+ *
+ * Colour: the filled pips read `--pips-c`, which falls back to the neutral text mix the chip has
+ * always used. A container that wants the level hue sets `--pips-c: var(--tx)` (the card's .wc-tx
+ * and the writeup row's .wm-diff-chip both do, by owner decision 2026-09-07). Unfilled pips are a
+ * 1px ring in that same colour with a transparent centre, so the "N of 4" denominator is visible on
+ * paper (the old --sl-color-gray-5 disc measured about 1.3:1 there).
+ *
+ * The discs are aria-hidden; the visually hidden text is the accessible rendering. `.sr-only` is
+ * scoped to .sl-markdown-content (utilities.css), which is where every current consumer renders
+ * (writeup rows and the platform landings). A future marketing-surface consumer (a standalone
+ * /writeups page) would need its own sr-only rule; note it here rather than discover it.
+ */
+interface Props {
+  /** 1 (Easy) to 4 (Insane). The same scale as difficultyLevel in ./icons.ts. */
+  level: 1 | 2 | 3 | 4;
+}
+const { level } = Astro.props;
+
+// `astro build` does not type-check .astro props and this repo has no `astro check`, so a bad level
+// would otherwise ship as a chip with no filled pip and a false "Difficulty undefined of 4".
+if (![1, 2, 3, 4].includes(level)) {
+  throw new Error(`DifficultyPips: level must be 1, 2, 3 or 4, got ${JSON.stringify(level)}.`);
+}
+---
+<span class="dpips" data-level={level} aria-hidden="true"><i></i><i></i><i></i><i></i></span>{' '}<span class="sr-only">{`Difficulty ${level} of 4`}</span>

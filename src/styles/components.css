@@ -54,10 +54,14 @@ html[data-theme="dark"] .task-title {
    OS's own identity color (Linux Tux amber, Windows blue). Environment = the feel of that environment,
    with Active Directory a deeper enterprise indigo kept distinct from the Windows-blue chip it usually
    sits beside, and Standalone a solitary cool slate. A RESTRAINED halo gives life on dark; light uses a
-   hue-shadow (glow becomes haze on paper). EVALUATIVE Difficulty trails: a neutral, hue-free chip at the
-   SAME size/weight as the nav chips (a calm peer, not a heavier sibling), the word shown once, magnitude
-   carried only by pips that grow with level. Spacing: TIGHT under the title, OPEN before the body, no
-   divider. Chips are anchors to future filter routes. Both themes. */
+   hue-shadow (glow becomes haze on paper). On PicoCTF a CATEGORY chip (the writeup's middle directory,
+   derived exactly as platform is) sits between Platform and OS in its category hue from the taxonomy
+   ring (tokens.css --tx-*, mapped by the .tx-* vocabulary at the end of this block). EVALUATIVE
+   Difficulty trails: a neutral box at the SAME size/weight as the nav chips (a calm peer, not a heavier
+   sibling), the word shown once, magnitude carried by the shared DifficultyPips glyph, whose filled pips
+   take the level's hue from the same ring (owner decision 2026-09-07) while the word and the box stay
+   hue-free. Spacing: TIGHT under the title, OPEN before the body, no divider. Chips are anchors to future
+   filter routes. Both themes. */
 @layer components {
 .writeup-meta {
   display: flex;
@@ -82,7 +86,7 @@ html[data-theme="dark"] .task-title {
   color: var(--wm-c);
   /* Focus-ring hook for the WriteupMeta rollout: when the chips become <a> (once the filter routes
      ship), each rings in its own --wm-c identity via the shared :where(a,...):focus-visible rule.
-     Inert now (chips render as non-interactive <span>s and appear on no page yet). */
+     Inert now (chips render as non-interactive <span>s on every writeup). */
   --focus-ring: var(--wm-c);
   background: color-mix(in oklab, var(--wm-c) 15%, transparent);
   border: 1px solid color-mix(in oklab, var(--wm-c) 38%, transparent);
@@ -156,7 +160,19 @@ html[data-theme="dark"] .task-title {
 .writeup-meta .wm-env-progressive { --wm-c: #3fd9a8; }
 :root[data-theme="light"] .writeup-meta .wm-env-progressive { --wm-c: #006345; } /* 3.00 -> 4.80, chroma 81% */
 
-/* Difficulty: neutral, hue-free, SAME size/weight as nav chips. Word once; magnitude via pips only. */
+/* Category (PicoCTF only): the writeup's middle directory, derived by the injector exactly as platform
+   is and validated against src/lib/taxonomy.mjs, rendered as a normal --wm-c chip whose hue is the
+   category's slot on the taxonomy ring (the .tx-<slug> class on the chip sets --tx, see the vocabulary
+   below). Its icon is the shared square swatch (icons.ts categoryGlyph), tinted from --wm-c like every
+   monochrome mark. Sits between Platform and OS. */
+.writeup-meta .wm-cat { --wm-c: var(--tx); }
+
+/* Difficulty: a neutral box, SAME size/weight as the nav chips; the word once, the magnitude in the
+   shared DifficultyPips glyph (badges/DifficultyPips.astro, painted by the .dpips rules below). The
+   chip carries .tx-<level> so --tx resolves on it, and it hands that hue to the glyph through --pips-c
+   (owner decision 2026-09-07, which partly supersedes the achromatic pips of 2026-07-10). The word and
+   the box stay hue-free so the chip reads as a calm peer of the nav chips; only the glyph carries the
+   rating's colour, exactly as it does on the landing card, so card and writeup share one rendering. */
 .writeup-meta .wm-diff { display: inline-flex; align-items: center; }
 .writeup-meta .wm-diff-chip {
   display: inline-flex;
@@ -167,29 +183,46 @@ html[data-theme="dark"] .task-title {
   font-weight: 600;
   color: var(--sl-color-text);
   background: color-mix(in oklab, var(--sl-color-text) 5%, transparent);
-  border: 1px solid var(--sl-color-gray-5);
+  /* Was var(--sl-color-gray-5), which on light resolves to hsl(224 6% 77%): about 1.3:1 on paper, so
+     the box had no visible edge there. A text mix exists in both themes (about 2.1:1 dark on the page,
+     2.2:1 light on paper): a decorative boundary, since the fill and the label identify the chip. */
+  border: 1px solid color-mix(in oklab, var(--sl-color-text) 35%, transparent);
   border-radius: 6px;
   padding: 0.32rem 0.7rem;
+  --pips-c: var(--tx);
 }
-.writeup-meta .wm-pips { display: inline-flex; align-items: center; gap: 3px; }
-.writeup-meta .wm-pips i {
+
+/* ── DifficultyPips: the ordinal glyph (badges/DifficultyPips.astro) ───────────
+   Painted here rather than in the component because two components render it: the writeup row
+   (.wm-diff-chip above) and the landing card (WriteupCard .wc-tx). Filled pips read --pips-c, which
+   falls back to the neutral text mix the chip used before the hue ring; a container that wants the
+   level hue sets --pips-c: var(--tx). Unfilled pips are a 1px RING in the same colour with a
+   transparent centre: the old solid --sl-color-gray-5 disc measured about 1.3:1 on paper, so "one of
+   four" had no visible denominator on light, and a ring inherits the label's own ratio. Non-text, so
+   the bar is 3:1; every ring hue clears it on the page, on the card, and under the card's hover glare
+   at its 22% peak (worst 3.86 dark for the arc's magenta, the Hard tier, measured on a fixture, and
+   4.91 light for the ring's violet swatch under the PicoCTF glare; computed on the composite).
+   Filled + growing per level: the filled count is the level, and the LAST filled pip grows so higher
+   difficulty visibly outweighs lower beyond count alone; nth-child(N) for level N is the trailing
+   filled pip, not the leading one. Geometry is unchanged from the 2026-07-10 chip. */
+.dpips { display: inline-flex; align-items: center; gap: 3px; }
+.dpips i {
   width: 5px; height: 5px; border-radius: 50%;
-  background: var(--sl-color-gray-5); display: block;
+  display: block;
+  box-sizing: border-box;
+  border: 1px solid var(--pips-c, color-mix(in oklab, var(--sl-color-text) 80%, transparent));
+  background: transparent;
 }
-/* Filled + growing per level: the filled count is the level, and the LAST filled pip grows so
-   higher difficulty visibly outweighs lower beyond count alone. Achromatic (no hue). The growth
-   selectors below are nth-child(N) for level N, which is the trailing filled pip, not the leading
-   one; the wording used to say "leading" and contradicted them. */
-.writeup-meta .wm-pips[data-level="1"] i:nth-child(1),
-.writeup-meta .wm-pips[data-level="2"] i:nth-child(-n+2),
-.writeup-meta .wm-pips[data-level="3"] i:nth-child(-n+3),
-.writeup-meta .wm-pips[data-level="4"] i:nth-child(-n+4) {
-  background: color-mix(in oklab, var(--sl-color-text) 80%, transparent);
+.dpips[data-level="1"] i:nth-child(1),
+.dpips[data-level="2"] i:nth-child(-n+2),
+.dpips[data-level="3"] i:nth-child(-n+3),
+.dpips[data-level="4"] i:nth-child(-n+4) {
+  background: var(--pips-c, color-mix(in oklab, var(--sl-color-text) 80%, transparent));
 }
-.writeup-meta .wm-pips[data-level="1"] i:nth-child(1) { width: 6px; height: 6px; }
-.writeup-meta .wm-pips[data-level="2"] i:nth-child(2) { width: 6px; height: 6px; }
-.writeup-meta .wm-pips[data-level="3"] i:nth-child(3) { width: 7px; height: 7px; }
-.writeup-meta .wm-pips[data-level="4"] i:nth-child(4) { width: 8px; height: 8px; }
+.dpips[data-level="1"] i:nth-child(1) { width: 6px; height: 6px; }
+.dpips[data-level="2"] i:nth-child(2) { width: 6px; height: 6px; }
+.dpips[data-level="3"] i:nth-child(3) { width: 7px; height: 7px; }
+.dpips[data-level="4"] i:nth-child(4) { width: 8px; height: 8px; }
 
 /* ── Taxonomy vocabulary: slug to hue, declared once ──────────────────────────
    The ten value classes every taxonomy consumer carries (the rail pill, the card meta line, the

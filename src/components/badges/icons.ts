@@ -68,6 +68,17 @@ export const environmentIcons: Record<Environment, string> = {
   Progressive: inline(progressiveRaw),
 };
 
+// PicoCTF category chips carry ONE shared nominal glyph rather than six drawn marks: a 9px rounded
+// square in the 15px box, currentColor, aria-hidden, so it tints from the chip's --wm-c like every
+// other monochrome mark. Square on purpose: the sidebar's platform markers are round dots and the
+// difficulty glyph is round pips, so a square can never read as either. It is deliberately smaller
+// than the 14px pictogram grid the other glyphs sit on, because it is a colour swatch and not a
+// picture, and a 14px solid square outweighs its own label. Six drawn category glyphs are an owner
+// option later; until then one shape says "a category" and the hue says which. The same swatch is
+// drawn as a plain span on the landing card (WriteupCard .wc-swatch); this is the chip copy.
+export const categoryGlyph: string =
+  `<svg viewBox="0 0 15 15" aria-hidden="true"><rect x="3" y="3" width="9" height="9" rx="2" fill="currentColor"/></svg>`;
+
 // Platform slug for the future filter route, e.g. /platform/hackthebox
 export const platformSlug: Record<Platform, string> = {
   HackTheBox: 'hackthebox',
