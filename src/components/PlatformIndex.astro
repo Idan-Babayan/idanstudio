@@ -144,8 +144,12 @@ const isEmpty: boolean = total === 0;
 
 				{!isEmpty && (
 					<div class="pi-stats reveal">
+						{/* The resting HTML holds the FINAL value, so crawlers and
+						    reduced-motion readers see the real number (a no-script visitor sees none of the hero,
+						    which stays at opacity 0 until the reveal script runs, the homepage rule); countUp animates from 0 only when it
+						    runs (the homepage rule). */}
 						<div class="pi-stat">
-							<div class="pi-num" data-count={total}>0</div>
+							<div class="pi-num" data-count={total}>{total}</div>
 							<div class="pi-lbl">{isWargames ? (total === 1 ? 'Wargame' : 'Wargames') : total === 1 ? 'Writeup' : 'Writeups'}</div>
 						</div>
 						{present.length > 0 && (
@@ -634,7 +638,11 @@ const isEmpty: boolean = total === 0;
 		}, 45);
 	}
 
-	/* Count up (cubic ease-out, 1400ms): verbatim from the homepage. */
+	/* Count up (cubic ease-out, 1400ms): ported from the homepage without its synchronous reset to 0
+	   (the resting HTML holds the final value here; data-text / data-suffix stay for parity and have
+	   no producer on this page), including its reduced-motion
+	   gate: the resting HTML already holds the final value, so under reduced motion the number is
+	   simply left (re-set, in case the reveal ran) at its end value and never animates. */
 	function countUp(el: HTMLElement) {
 		const text = el.dataset.text;
 		if (text) {
@@ -643,6 +651,10 @@ const isEmpty: boolean = total === 0;
 		}
 		const end = +(el.dataset.count ?? '0');
 		const suf = el.dataset.suffix ?? '';
+		if (reduce) {
+			el.textContent = String(end) + suf;
+			return;
+		}
 		const dur = 1400;
 		let s: number | null = null;
 		const step = (t: number) => {
