@@ -25,3 +25,7 @@ pnpm-debug.log*
 # local-only design study tools (kept out of source on purpose: this one loads faces from the
 # Google Fonts CDN, and source carries no Google Fonts origin. See DECISIONS 2026-07-25)
 typography-playground.html
+
+# local-only design study, same reasoning: the HackTheBox difficulty palette study lives under public/
+# so the dev server serves it with the self-hosted fonts (2026-09-07). Never a source file.
+public/htb-difficulty-palette-study*.html
